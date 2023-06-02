@@ -1,0 +1,496 @@
+{
+    "note": {
+        "_comment": "A comment that is ignored",
+        "_empty_line": "An empty line",
+        "_selector": {
+            "player_name": "A player name",
+            "complex": {
+                "root": "Use complex rules to choose entities",
+                "vars": {
+                    "e": "All entities",
+                    "s": "Executer",
+                    "a": "All players",
+                    "p": "Nearest player",
+                    "r": "Random player",
+                    "initiator": "Player who opened dialogue"
+                },
+                "begin": "Add entity filters",
+                "end": "End of entity filters",
+                "seperator": "Next entity filter",
+                "arg_names": {
+                    "r": "Min distance",
+                    "rm": "Max distance",
+                    "dx": "Length on X axis of position box",
+                    "dy": "Length on Y axis of position box",
+                    "dz": "Length on Z axis of position box",
+                    "x": "X position of analysis",
+                    "y": "Y position of analysis",
+                    "z": "Z position of analysis",
+                    "scores": "Score on scoreboard",
+                    "tag": "Entity tag",
+                    "name": "Name",
+                    "type": "Type",
+                    "family": "Family",
+                    "rx": "Max vertical rotation",
+                    "rxm": "Min vertical rotation",
+                    "ry": "Max horizontal rotation",
+                    "rym": "Min horizontal rotation",
+                    "hasitem": "Items in inventory",
+                    "l": "Max exp level",
+                    "lm": "Min exp level",
+                    "m": "Game mode",
+                    "c": "Max number of entity",
+                    "haspermission": "Input permission"
+                },
+                "equals": "Input argument value",
+                "scores": {
+                    "begin": "Start of score filters",
+                    "end": "End of score filters",
+                    "seperator": "Next score filter"
+                },
+                "hasitem": {
+                    "begin": {
+                        "array": "Multiple hasitem rules",
+                        "object": "A hasitem rule"
+                    },
+                    "seperator": {
+                        "array": "Next hasitem rule",
+                        "object": "Next hasitem argument"
+                    },
+                    "equals": "Input hasitem argument value",
+                    "end": {
+                        "array": "End of all hasitem rules",
+                        "object": "End of hasitem rule"
+                    },
+                    "item": "Type of item",
+                    "data": "Item data value (use carefully!)",
+                    "quantity": "Quantity (0 -> no item)",
+                    "location": "Inventory slot",
+                    "slot": "Slot ID of 'location'"
+                },
+                "tag": "Entity tag; omitted -> no tag",
+                "haspermission": {
+                    "begin": "Start of input permission filters",
+                    "end": "End of input permission filters",
+                    "seperator": "Next input permission filter"
+                }
+            }
+        },
+        "_pos": {
+            "float_offset": "Position offset",
+            "absolute": {
+                "x": "Absolute position (X axis)",
+                "y": "Absolute position (Y axis)",
+                "z": "Absolute position (Z axis)"
+            },
+            "relative": {
+                "x": "Relative position (X axis)",
+                "y": "Relative position (Y axis)",
+                "z": "Relative position (Z axis)"
+            },
+            "local": {
+                "x": "Local position (left)",
+                "y": "Local position (up)",
+                "z": "Local position (front)"
+            }
+        },
+        "_rot": {
+            "float_offset": "Rotation offset",
+            "absolute": {
+                "x": "Vertical rotation (-90: Up, 90: Down)",
+                "y": "Horizontal rotation (-180: Z-, -90: X+, 0: Z+, 90: X-)"
+            },
+            "relative": {
+                "x": "Vertical rotation (+: Down)",
+                "y": "Horizontal rotation (+: Clockwise)"
+            }
+        },
+        "_space": "Next argument",
+        "_invert": "Invertion",
+        "_wildcard": "Wildcard",
+        "_int_range": "Integer range",
+        "_scoreboard": "Scoreboard objective",
+        "_gamemode": {
+            "_number": "Integer ID (unrecommended)",
+            "survival": "Survival mode (0)",
+            "creative": "Creative mode (1)",
+            "adventure": "Adventure mode (2)",
+            "spectator": "Spectator mode",
+            "default": "Use world default mode"
+        },
+        "_block_state": {
+            "begin": "Begin of block states",
+            "seperator": "Next block state",
+            "end": "End of block states",
+            "key": "Block state name",
+            "value": "Block state value"
+        },
+        "_item_data": "Item data value",
+        "_block_data": "Block data value (unrecommended)",
+        "_states": {
+            "enabled": "Enabled",
+            "disabled": "Disabled"
+        },
+        "_json": {
+            "_suggested": "*Recommended JSON*",
+            "_libs": {
+                "lock": {
+                    "lock_in_slot": "Fix item in the slot",
+                    "lock_in_inventory": "Item can be moved by player"
+                }
+            },
+            "$item_components@object": {
+                "_keys": {
+                    "minecraft:item_lock": "Unthrowable and uncraftable item",
+                    "minecraft:can_destroy": "Adventure mode block breaking tool",
+                    "minecraft:can_place_on": "Adventure mode placeable block",
+                    "minecraft:keep_on_death": "Won't drop when owner dies"
+                },
+                "!minecraft:item_lock@object": {
+                    "_keys": {
+                        "mode": "Lock mode"
+                    }
+                },
+                "!minecraft:can_destroy@object": {
+                    "_keys": {
+                        "blocks": "Blocks that can be destroyed with this tool"
+                    }
+                },
+                "!minecraft:can_place_on@object": {
+                    "_keys": {
+                        "blocks": "Blocks on which this item can be placed"
+                    }
+                }
+            }
+        },
+        "help": {
+            "root": "Show help messages about commands",
+            "on": {
+                "page": "Show given page of command list",
+                "page_1": "Show first page of command list",
+                "command": "Show usage of given command"
+            }
+        },
+        "ability": {
+            "root": "[EDU] Manage players' abilities",
+            "abilities": {
+                "mayfly": "Allow player to fly",
+                "worldbuilder": "Give player Worldbuilder",
+                "mute": "Mute the player"
+            },
+            "query": {
+                "unknown": "Unknown query",
+                "ability": "Show state of given ability"
+            },
+            "set": "Modify player's ability"
+        },
+        "alwaysday": {
+            "root": "Lock/Unlock Alwaysday",
+            "lock": "Alwaysday lock",
+            "set": "Set Alwaysday to given value"
+        },
+        "camerashake": {
+            "root": "Apply shaking to player's view",
+            "add": {
+                "root": "Shake player's camera",
+                "intensity": "Intensity",
+                "seconds": "Duration (seconds)",
+                "types": {
+                    "positional": "Positional",
+                    "rotational": "Rotational"
+                }
+            },
+            "stop": "Stop to shake player's screen"
+        },
+        "clear": {
+            "root": "Clear player's inventory",
+            "max_count": "Max item count; -1 -> No Limit"
+        },
+        "clearspawnpoint": {
+            "root": "Unset player's spawn point"
+        },
+        "clone": {
+            "root": "Copy and paste blocks",
+            "masks": {
+                "masked": "Do not copy air blocks",
+                "replace": "Replace all blocks in destination area"
+            },
+            "clones": {
+                "force": "Copy even if there's overlap between areas",
+                "move": "Replace the copied block with air",
+                "normal": "Normal"
+            },
+            "filtered": "Only clone blocks of specified type"
+        },
+        "wsserver": {
+            "root": "Manage WebSocket server connection",
+            "out": "Disconnect from current server",
+            "address": "Server address"
+        },
+        "damage": {
+            "root": "Damage entities",
+            "amount": "Amount (1 = Half a heart)",
+            "damager": "Set damager"
+        },
+        "deop": {
+            "root": "Remove Operator from player"
+        },
+        "dialogue": {
+            "root": "Open/Change dialogue for players",
+            "modes": {
+                "open": "Open a dialogue",
+                "change": "Change scene for a dialogue"
+            },
+            "npc": "NPC entity",
+            "player": "Player entity",
+            "scene": "Scene name"
+        },
+        "difficulty": {
+            "root": "Change difficulty of world",
+            "int": "Integer ID (unrecommended)",
+            "diffs": {
+                "peaceful": "Peaceful (0)",
+                "easy": "Easy (1)",
+                "normal": "Normal (2)",
+                "hard": "Hard (3)"
+            }
+        },
+        "effect": {
+            "root": "Manage effects (i.e. buffs)",
+            "clear": "Clear all effects from player",
+            "seconds": "Duration, in seconds (in ticks for 3 invisible buffs)",
+            "amplifier": "Level minus 1 (e.g. 0=Level 1)",
+            "hide_particles": "Hide potion particles"
+        },
+        "enchant": {
+            "root": "Enchant item held by players",
+            "int_id": "Enchantment ID (unrecommended)",
+            "level": "Level of enchantment"
+        },
+        "event": {
+            "root": "Trigger entity events"
+        },
+        "execute": {
+            "root": "Run another command in specified context and conditions",
+            "subcmds": {
+                "align": "Convert position to block position (floor)",
+                "anchored": "Whether position is at eyes of entity or feet",
+                "as": "Execute as an entity",
+                "at": "Execute at place of an entity",
+                "facing": "Change rotation according to facing place",
+                "in": "Change dimension",
+                "positioned": "Change position",
+                "rotated": "Change rotation",
+                "if": "Execute when the condition is satisfied",
+                "unless": "Execute when the condition isn't satisfied",
+                "run": "Specify the command to run"
+            },
+            "tests": {
+                "block": "Type of a block",
+                "blocks": {
+                    "root": "Compare two areas",
+                    "modes": {
+                        "all": "All blocks included",
+                        "masked": "Air not included"
+                    }
+                },
+                "entity": "Whether an entity exists",
+                "score": {
+                    "root": "Scores on scoreboard",
+                    "matches": "Specify a range",
+                    "compare_ops": {
+                        "=": "Pass if A = B",
+                        ">=": "Pass if A >= B",
+                        "<=": "Pass if A <= B",
+                        ">": "Pass if A > B",
+                        "<": "Pass if A < B"
+                    }
+                }
+            },
+            "anchors": {
+                "eyes": "At entity's eyes",
+                "feet": "At entity's feet"
+            },
+            "dims": {
+                "overworld": "Overworld",
+                "nether": "The Nether",
+                "the_end": "The End"
+            },
+            "entity_variant": "Use data from an entity",
+            "old": {
+                "detect": "Run only when type of a block satisfies",
+                "block_data": "Block data value"
+            }
+        },
+        "fill": {
+            "root": "Fill an area with blocks",
+            "modes": {
+                "replace": {
+                    "root": "Replace only a certain type of block or all blocks",
+                    "all": "Replace all blocks"
+                },
+                "destroy": "Break the block as if a player dig it (drop item, play animation)",
+                "hollow": "Create a hollow cuboid, replace inside with air blocks",
+                "keep": "Replace only air blocks",
+                "outline": "Create a hollow cuboid, leave inside the original blocks"
+            }
+        },
+        "fog": {
+            "root": "Manage fog effect on players' screens",
+            "modes": {
+                "remove": "Remove all fogs pushed with given name",
+                "pop": "Remove first fog pushed with given name",
+                "push": "Push the fog effect to the player"
+            },
+            "user_provided_name": "Name of this fog"
+        },
+        "function": {
+            "root": "Run commands defined in a .mcfunction file",
+            "path": "Path to function file"
+        },
+        "gamemode": {
+            "root": "Set players' game mode"
+        },
+        "gamerule": {
+            "root": "Manage game rules",
+            "query": "Inquire about current state of the rule",
+            "value": "Modify value of the rule"
+        },
+        "give": {
+            "root": "Give players items",
+            "amount": "Amount of item"
+        },
+        "immutableworld": {
+            "root": "[EDU] Manage whether world can be modified",
+            "query": "Inquire about whether the world is immutable",
+            "set": "Set whether the world is immutable"
+        },
+        "inputpermission": {
+            "root": "Manage players' ability to control their character",
+            "set": "Modify players' input permission",
+            "query": {
+                "root": "Inquire about players' input permission",
+                "equal": "Succeed if the state is the same as the given state",
+                "normal": "Show the state of players' given permission"
+            }
+        },
+        "kick": {
+            "root": "Kick player out of game",
+            "target": "Target (Player name / selector with name argument)",
+            "reason": "Reason"
+        },
+        "kill": {
+            "root": "Kill an entity"
+        },
+        "list": {
+            "root": "List all players on the server"
+        },
+        "locate": {
+            "root": "Find a specified structure or biome in the world",
+            "biome": "Look for a biome",
+            "structure": {
+                "root": "Look for a structure",
+                "new_chunks": "Only search in unloaded chunks or not"
+            }
+        },
+        "loot": {
+            "root": "Spawn loots from loot tables",
+            "origin": {
+                "kill": "Use the death drop of an entity",
+                "loot": "Use a loot table path",
+                "loot_table": "Loot table path",
+                "tools": {
+                    "mainhand": "Use weapon on executer's main hand",
+                    "offhand": "Use weapon on executer's off hand"
+                }
+            },
+            "give": "Give the generated items to a player",
+            "insert": "Insert the generated items into a block's storage",
+            "spawn": "Drop the items as entities",
+            "replace": {
+                "root": "Replace specified slots with generated items",
+                "entity": "Replace entity inventory",
+                "block": "Replace block storage",
+                "slot_count": "Number of consecutive slots to be filled"
+            }
+        },
+        "tellraw": {
+            "root": "Send specified players a message using rawtext"
+        }
+    },
+    "error": {
+        "syntax": {
+            "_root": "{ln}:{col}: {suberrs}",
+            "_seperator": "; ",
+            "expect": {
+                "_root": "Expect {content}",
+                "_seperator": " or ",
+                "char": "{char!r}",
+                "keyword": "{keyword!r}",
+                "terminator": "a terminator like space",
+                "enum": "one of {options}",
+                "quoted_str": "a quoted string",
+                "int": "an integer",
+                "float": "a float",
+                "offset_float": "a float offset",
+                "word": "a word",
+                "bool": "a boolean (true/false)",
+                "chars": "{chars!r}",
+                "swizzle": "combination of x, y and z",
+                "bare_text": "any text"
+            },
+            "unclosed_str": "Unclosed string",
+            "too_many_args": "Too many arguments",
+            "id_invalid": "Invalid character {char!r} in namespaced ID",
+            "json_str_u_escape": "Expecting 4 hex digits after \\u"
+        },
+        "semantic": {
+            "_root": "{ln1}:{col1}~{ln2}:{col2}: {message}",
+            "number": {
+                "out_of_range": "Number out of range {min}~{max}",
+                "cant_be": "Number can't be {num}",
+                "must_be": "Number must be one of {nums}"
+            }
+        }
+    },
+    "autocomp": {
+        "space": "(Space)",
+        "eol": "(Line Finish)",
+        "char": "{char}",
+        "integer": "(Integer)",
+        "float": "(Float)",
+        "word": "(Word)",
+        "quoted_string": "(Quoted String)",
+        "keyword": "{keyword}",
+        "option": "{option}",
+        "bare_text": "(Any Text)",
+        "offset_float": "(Float)",
+        "true": "true",
+        "false": "false",
+        "chars": "{chars}",
+        "swizzle": "{swizzle}",
+        "no_idtable": {
+            "_hint": "(Load proper ID table to see full list)",
+            "item": "[Item Type]",
+            "entity": "[Entity Type]",
+            "family": "[Entity Family]",
+            "entity_slot": "[Entity Slot Type]",
+            "block_slot": "[Block Slot Type]",
+            "block": "[Block Type]",
+            "damage": "[Damage Cause]",
+            "effect": "[Buff]",
+            "entity_event": "[Entity Event]",
+            "fog": "[Fog]",
+            "game_rule": "[Game Rule]",
+            "permission": "[Input Permission]",
+            "biome": "[Biome]",
+            "structure": "[Structure]"
+        },
+        "dynamic_id": {
+            "failed": "(Can't find in ID table)"
+        }
+    },
+    "tkapp": {
+        "no_error": "No error found :)"
+    }
+}
