@@ -16,7 +16,7 @@
                 },
                 "begin": "Add entity filters",
                 "end": "End of entity filters",
-                "seperator": "Next entity filter",
+                "separator": "Next entity filter",
                 "arg_names": {
                     "r": "Min distance",
                     "rm": "Max distance",
@@ -46,14 +46,14 @@
                 "scores": {
                     "begin": "Start of score filters",
                     "end": "End of score filters",
-                    "seperator": "Next score filter"
+                    "separator": "Next score filter"
                 },
                 "hasitem": {
                     "begin": {
                         "array": "Multiple hasitem rules",
                         "object": "A hasitem rule"
                     },
-                    "seperator": {
+                    "separator": {
                         "array": "Next hasitem rule",
                         "object": "Next hasitem argument"
                     },
@@ -72,7 +72,7 @@
                 "haspermission": {
                     "begin": "Start of input permission filters",
                     "end": "End of input permission filters",
-                    "seperator": "Next input permission filter"
+                    "separator": "Next input permission filter"
                 }
             }
         },
@@ -120,17 +120,20 @@
         },
         "_block_state": {
             "begin": "Begin of block states",
-            "seperator": "Next block state",
+            "separator": "Next block state",
             "end": "End of block states",
             "key": "Block state name",
             "value": "Block state value"
         },
         "_item_data": "Item data value",
         "_block_data": "Block data value (unrecommended)",
+        "_slot_number": "Slot number",
         "_states": {
             "enabled": "Enabled",
             "disabled": "Disabled"
         },
+        "_name_tag": "Entity name tag",
+        "_wildcard_entity_event": "No entity event",
         "_json": {
             "_suggested": "*Recommended JSON*",
             "_libs": {
@@ -398,7 +401,6 @@
             "origin": {
                 "kill": "Use the death drop of an entity",
                 "loot": "Use a loot table path",
-                "loot_table": "Loot table path",
                 "tools": {
                     "mainhand": "Use weapon on executer's main hand",
                     "offhand": "Use weapon on executer's off hand"
@@ -414,6 +416,82 @@
                 "slot_count": "Number of consecutive slots to be filled"
             }
         },
+        "me": {
+            "root": "Show a message about yourself"
+        },
+        "mobevent": {
+            "root": "Manage mob events",
+            "query": "Inquire about state of the given event",
+            "value": "Modify mob event value",
+            "events_enabled": "Disable all events when set to false"
+        },
+        "tell": {
+            "root": "Send specified players a message"
+        },
+        "music": {
+            "root": "Manage music",
+            "modes": {
+                "play": "Play a music",
+                "queue": "Add music to play queue",
+                "stop": "Stop playing a music",
+                "volume": "Adjust volume of a music"
+            },
+            "volume": "Volume",
+            "fade_in": "Fade in time (seconds)",
+            "fade_out": "Fade out time (seconds)",
+            "loop_modes": {
+                "play_once": "Play the music once",
+                "loop": "Repeat the song"
+            }
+        },
+        "op": {
+            "root": "Make players Operator of game"
+        },
+        "playanimation": {
+            "root": "Trigger entity animations",
+            "blend": "Blend out time (seconds)",
+            "stop_exp": "Stop playing if the Molang evaluates to true"
+        },
+        "playsound": {
+            "root": "Play a sound",
+            "volume": "Volume (0~1; >1 -> range set to 16 * volume)",
+            "pitch": "Pitch",
+            "min_volume": "Volume for players out of sound's normal range"
+        },
+        "reload": {
+            "root": "Reload functions & scripts in behavior packs"
+        },
+        "replaceitem": {
+            "root": "Replace specified slots with given items",
+            "modes": {
+                "destroy": "Replace that slot any way",
+                "keep": "Don't replace if there's already something in that slot"
+            },
+            "entity": "Replace entity inventory",
+            "block": "Replace block storage",
+            "amount": "Amount of items"
+        },
+        "ride": {
+            "root": "Manage riding relationships between entities",
+            "mount": "Let target ride on another entity",
+            "tp_modes": {
+                "teleport_rider": "Teleport rider",
+                "teleport_ride": "Teleport ride"
+            },
+            "fill_modes": {
+                "if_group_fits": "Only proceed when all riders can ride on that ride",
+                "until_full": "Try proceeding one by one until ride is full"
+            },
+            "dismount": "Make target dismount",
+            "dismount_rider": "Make target's riders dismount from target",
+            "summon_rider": "Summon a rider for target",
+            "summon_ride": "Summon a ride for target",
+            "ride_modes": {
+                "skip_riders": "Skip if the rider already has a ride",
+                "no_ride_change": "Skip if the rider already has a ride or a rider",
+                "reassign_rides": "Let the rider dismount before proceeding if it already has a ride"
+            }
+        },
         "tellraw": {
             "root": "Send specified players a message using rawtext"
         }
@@ -421,10 +499,10 @@
     "error": {
         "syntax": {
             "_root": "{ln}:{col}: {suberrs}",
-            "_seperator": "; ",
+            "_separator": "; ",
             "expect": {
                 "_root": "Expect {content}",
-                "_seperator": " or ",
+                "_separator": " or ",
                 "char": "{char!r}",
                 "keyword": "{keyword!r}",
                 "terminator": "a terminator like space",
@@ -484,11 +562,16 @@
             "game_rule": "[Game Rule]",
             "permission": "[Input Permission]",
             "biome": "[Biome]",
-            "structure": "[Structure]"
+            "structure": "[Structure]",
+            "mob_event": "[Mob Event]",
+            "music": "[Sound (Music)]",
+            "sound": "[Sound]",
+            "loot_table": "[Loot Table Path]",
+            "rpac_state": "[Anim. Controller State]",
+            "animation_ref": "[Entity Anim. Reference]",
+            "rpac": "[Animation Controller]"
         },
-        "dynamic_id": {
-            "failed": "(Can't find in ID table)"
-        }
+        "dynamic_id_fails": "(Can't find in ID table)"
     },
     "tkapp": {
         "no_error": "No error found :)"

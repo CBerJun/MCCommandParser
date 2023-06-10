@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""`mccmdhl2` - The Minecraft Bedrock edition command parser.
+"""`mccmdhl2` - The Minecraft Bedrock Edition command parser.
 Command system of Minecraft Bedrock Edition version 1.19.0+ is
 supported.  Friendly messages are given when failed to parse.
 Autocompleter can give you suggestions on what to type next and
@@ -62,8 +62,11 @@ class MCCmdParser:
                  version: "MCVersion" = (1, 19, 80),
                  translator: _Optional[Translator] = None):
         self.tree = tree
-        if not tree.frozen:
-            tree.freeze()
+        if not isinstance(self.tree, Empty):
+            # Make sure there's an empty root node for autocompleter
+            self.tree = Empty().branch(self.tree)
+        if not self.tree.frozen:
+            self.tree.freeze()
         if translator is None:
             self.translator = BASE_TRANSLATOR
         else:
@@ -76,7 +79,7 @@ class MCCmdParser:
         """Parse 1 line of source. `BaseError` is thrown when
         any error occurs. The error message can be resolved using
         `resolve_error` method.
-        The color information are of `FontMark` type
+        After parsing, the color information are of `FontMark` type
         and can be obtained using `get_font_marks` method.
         """
         assert not self.has_parsed, "Repeat parsing"
@@ -101,8 +104,9 @@ class MCCmdParser:
                 id_table: _Optional[IdTable] = None) \
             -> _List[HandledSuggestion]:
         """Give suggestions when cursor is on `location`."""
-        assert self.has_parsed, "Source must be parsed completely before " \
-            "suggesting"
+        if not self.has_parsed:
+            raise RuntimeError("Source must be parsed completely before "
+                "suggesting")
         if id_table:
             table = IdTable.merge_from(id_table, BASE_ID_TABLE)
         else:
@@ -113,8 +117,9 @@ class MCCmdParser:
 
     def get_font_marks(self) -> _List[FontMark]:
         """Get `Mark`s (tokens)."""
-        assert self.has_parsed, "Source must be parsed completely before " \
-            "producing marks."
+        if not self.has_parsed:
+            raise RuntimeError("Source must be parsed completely before "
+                "producing marks")
         return self.marker.font_marks
 
     def resolve_error(self, err: BaseError) -> str:

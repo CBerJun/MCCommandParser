@@ -22,6 +22,16 @@ from typing import (
     TYPE_CHECKING, List, Tuple, Type, TypeVar, Any,
     Optional, Callable, Generic, Union
 )
+try:
+    from typing import Final
+except ImportError:
+    class _FinalMeta(type):
+        # No __class_getitem__ in old version where Final is unavailable
+        def __getitem__(self, v):
+            assert isinstance(v, type) or v is None
+            return v
+    class Final(metaclass=_FinalMeta):
+        pass
 from enum import Enum
 
 from .ctxutils import ExitStack
@@ -51,6 +61,8 @@ class Font(Enum):
     target = 9  # Player name & selector variable
     comment = 10  # Comments
     rotation = 11  # Rotation
+    molang_class = 12  # "qeury" in Molang "query."
+    molang_keyword = 13  # "return" in Molang
 
 # --- INTERNAL EXCEPTIONS ---
 
@@ -85,7 +97,7 @@ class ExpectationError(BaseError):
 
     def resolve(self, translator: "Translator"):
         return translator.get("error.syntax.expect._root").format(
-            content=translator.get("error.syntax.expect._seperator").join(
+            content=translator.get("error.syntax.expect._separator").join(
                 translator.get(msg).format(**kwds)
                 for msg, kwds in zip(self.messages, self.kwdss)
             )
@@ -122,7 +134,7 @@ class SyntaxError_(BaseError):
         self.kwds["col"] = self.location.column
         self.kwds["ln"] = self.location.line
         self.kwds["suberrs"] = (
-            translator.get("error.syntax._seperator").join(
+            translator.get("error.syntax._separator").join(
                 err.resolve(translator) for err in self.suberrs
             )
         )
@@ -152,10 +164,10 @@ MCVersion = Tuple[int, ...]
 VersionFilter = Callable[[MCVersion], bool]
 
 class Node(Generic[_PT]):
-    argument_end = True  # Whether argument terminator is required
-    default_font = None  # Default color font; ignored if not do_ac_mark
-    default_note = None  # Default auto-completion note
-    do_ac_mark = True  # Whether to leave `AutoCompletingMark`
+    argument_end: bool = True  # Whether argument terminator is required
+    default_font: Union[None, Font] = None  # Default color font
+    default_note: Union[None, str] = None  # Default auto-completion note
+    do_ac_mark: bool = True  # Whether to leave `AutoCompletingMark`
 
     def __init__(self):
         self.branches: List[Node] = []
@@ -285,13 +297,13 @@ class Node(Generic[_PT]):
                     if node.do_ac_mark or (not prev_node):
                         # Do ac mark when option is True OR this node
                         # is the root. (There must be some mark
-                        # marking the root.)
+                        # marking the root for autocompleter.)
                         stack.enter_context(marker.add_ac_mark(node=node))
                     if node.font_ is not None:
                         stack.enter_context(marker.add_font_mark(font=node.font_))
                     if node.checkers:
                         callback = stack.enter_context(
-                            marker.add_checker_mark(node, node.checkers)
+                            marker.add_checker_mark(node.checkers)
                         )
                     else:
                         callback = None
@@ -342,15 +354,15 @@ class Node(Generic[_PT]):
         return res
 
 class Finish(Node):
-    argument_end = False
-    do_ac_mark = False
-    
+    argument_end: Final[bool] = False
+    do_ac_mark: Final[bool] = False
+
     def _parse(self, reader: Reader):
         pass
 
 class Empty(Node):
-    argument_end = False
-    do_ac_mark = False
+    argument_end: Final[bool] = False
+    do_ac_mark: Final[bool] = False
 
     def _parse(self, reader: Reader):
         pass
@@ -383,7 +395,7 @@ class CompressedNode(Empty):
         return self
 
     def _tree(self):
-        raise NotImplementedError("should be implemented by subclass")
+        raise NotImplementedError("should be implemented by subclass")   
 
 class SubparsingNode(Node):
     do_ac_mark = False

@@ -351,7 +351,9 @@ class MCCmdText(tkinter.Text):
             Font.tag: {"foreground": "Blue", "font": font_italic},
             Font.position: {"foreground": "DarkTurquoise"},
             Font.rotation: {"foreground": "LightSkyBlue"},
-            Font.meta: {"foreground": "Teal"}
+            Font.meta: {"foreground": "Teal"},
+            Font.molang_class: {"foreground": "MediumBlue"},
+            Font.molang_keyword: {"foreground": "Purple"}
         }
         self.FONT_ERROR = {"background": "Pink"}
         self.update_font()

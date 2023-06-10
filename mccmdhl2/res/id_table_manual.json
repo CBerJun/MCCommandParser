@@ -130,5 +130,10 @@
     "permission": {
         "camera": "Allow player turning",
         "movement": "Allow player move"
+    },
+    "mob_event": {
+        "minecraft:ender_dragon_event": "Spawn an Ender Dragon on first entry of the End",
+        "minecraft:pillager_patrols_event": "Spawn Patrols",
+        "minecraft:wandering_trader_event": "Spawn Wandering Traders"
     }
 }

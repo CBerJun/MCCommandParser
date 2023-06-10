@@ -5,9 +5,9 @@ import sys
 try:
     from pstats import SortKey
 except ImportError:
-    CRITERIA = "cumtime"
+    CRITERIA = "time"
 else:
-    CRITERIA = SortKey.CUMTIME
+    CRITERIA = SortKey.TIME
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 _, THIS = os.path.split(__file__)

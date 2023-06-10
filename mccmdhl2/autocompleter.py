@@ -18,7 +18,7 @@
 
 from typing import (
     TYPE_CHECKING, Optional, List, Dict, Tuple,
-    Union, Any, Callable, Iterable, NewType, NoReturn
+    Union, Any, Callable, Iterable, NewType
 )
 import os
 import json
@@ -83,7 +83,7 @@ class IdTable:
     def empty_table(cls):
         return cls({})
 
-Refactor = Union[None, Callable[["Suggestion"], NoReturn]]
+Refactor = Union[None, Callable[["Suggestion"], None]]
 
 class Suggestion:
     def __init__(self, name: str, writes: str,

@@ -26,7 +26,7 @@ import sys
 import json
 import argparse
 from mccmdhl2 import IdTable
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 JSON_TOKENIZE = re.compile(
     r"""
@@ -44,12 +44,13 @@ JSON_TOKENIZE = re.compile(
 
 def action_input(input_type: str, vtype: str = "file"):
     class _Action(argparse.Action):
-        def __call__(self, parser, namespace, value: str, option):
+        def __call__(self, parser, namespace, value: str, option: str):
             if vtype in ("file", "dir"):
                 if not os.path.exists(value):
-                    argparser.error("path does not exists: %s" % value)
+                    argparser.error("%s: path does not exist: %s"
+                                    % (option, value))
                 if (vtype == "file") ^ os.path.isfile(value):
-                    argparser.error("path need to be a %s" % vtype)
+                    argparser.error("%s: need to be a %s" % (option, vtype))
             else:
                 assert vtype == "plain"
             if not hasattr(namespace, "input_list"):
@@ -82,7 +83,7 @@ argparser.add_argument(
     action=action_input("bp_entity", vtype="dir")
 )
 argparser.add_argument(
-    "-b", "--block-state", metavar="FILE",
+    "-B", "--block-state", metavar="FILE",
     help="input: the block state table by @Missing245 "
          "(https://commandsimulator.great-site.net/?i=1)",
     action=action_input("block_state")
@@ -98,9 +99,39 @@ argparser.add_argument(
     action=action_input("biome")
 )
 argparser.add_argument(
-    "-c", "--rp-block", metavar="FILE",
+    "-b", "--rp-block", metavar="FILE",
     help="input: blocks.json (resource pack block definition)",
     action=action_input("rp_block")
+)
+argparser.add_argument(
+    "-s", "--sound", metavar="FILE",
+    help="input: sound_definitions.json (sound definition)",
+    action=action_input("sound")
+)
+argparser.add_argument(
+    "-L", "--loot", metavar="DIR",
+    help="input: a directory of loot table definitions",
+    action=action_input("loot_table", vtype="dir")
+)
+argparser.add_argument(
+    "-E", "--rp-entity", metavar="DIR",
+    help="input: a directory of client entity definitions",
+    action=action_input("rp_entity", vtype="dir")
+)
+argparser.add_argument(
+    "-A", "--anim-controller", metavar="DIR",
+    help="input: a directory of client animation controller definitions",
+    action=action_input("rp_ac", vtype="dir")
+)
+argparser.add_argument(
+    "-a", "--animation", metavar="DIR",
+    help="input: a directory of client animation definitions",
+    action=action_input("rp_anim", vtype="dir")
+)
+argparser.add_argument(
+    "-r", "--recipe", metavar="DIR",
+    help="input: a directory of recipe definitions",
+    action=action_input("recipe", vtype="dir")
 )
 argparser.add_argument(
     "-o", "--out", metavar="PATH",
@@ -165,7 +196,7 @@ def handle_json_file(path: str):
     try:
         res = IdTable.from_json(path)
     except json.JSONDecodeError:
-        print("JSON Failure: skipping ID table %s" % path)
+        print("JSON error, skipping ID table %s" % path)
         return None
     else:
         print("Handled ID table %s" % path)
@@ -175,7 +206,7 @@ def handle_json(src: str):
     try:
         res = json_loads(src)
     except json.JSONDecodeError:
-        print("JSON Failure: skipping literal JSON")
+        print("JSON error, skipping literal JSON")
         return None
     else:
         return IdTable(res)
@@ -183,7 +214,7 @@ def handle_json(src: str):
 def _families_from_component(component: dict):
     try:
         family_c = component["minecraft:type_family"]["family"]
-    except KeyError:
+    except (KeyError, TypeError):
         return []
     else:
         if isinstance(family_c, list):
@@ -202,29 +233,27 @@ def handle_bp_entity(path: str):
             try:
                 definition = json_load(file)
             except json.JSONDecodeError:
-                print("JSON Failure: skipping entity %s" % spath)
+                print("JSON error, skipping entity %s" % spath)
                 continue
         # Handle JSON
         ## Events
-        events = []
         try:
             event_d = definition["minecraft:entity"]["events"]
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         else:
             if isinstance(event_d, dict):
-                events = event_d.keys()
-        all_events.update(events)
+                all_events.update(event_d.keys())
         ## Families
         try:
             family_d1 = definition["minecraft:entity"]["components"]
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         else:
             all_families.update(_families_from_component(family_d1))
         try:
             family_d2 = definition["minecraft:entity"]["component_groups"]
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         else:
             if isinstance(family_d2, dict):
@@ -236,12 +265,37 @@ def handle_bp_entity(path: str):
         "entity_event": dict.fromkeys(all_events)
     })
 
+def handle_rp_entity(path: str):
+    all_animations = set()
+    for name in os.listdir(path):
+        # Read File
+        spath = os.path.join(path, name)
+        if not os.path.isfile(spath):
+            continue
+        with open(spath, "r") as file:
+            try:
+                definition = json_load(file)
+            except json.JSONDecodeError:
+                print("JSON error, skipping client entity %s" % spath)
+                continue
+        # Handle JSON
+        try:
+            anim_d = definition["minecraft:client_entity"]["description"] \
+                               ["animations"]
+        except (KeyError, TypeError):
+            pass
+        else:
+            if isinstance(anim_d, dict):
+                all_animations.update(anim_d.keys())
+    res = dict.fromkeys(all_animations)
+    return IdTable({"animation_ref": res, "rpac_state": res})
+
 def handle_missing_bs(path: str):
     with open(path, "r") as file:
         try:
             root = json_load(file)
         except json.JSONDecodeError:
-            print("JSON Failure: skipping block state %s" % spath)
+            print("JSON error, skipping block state %s" % path)
             return None
     res = {}
     if not isinstance(root, dict):
@@ -288,13 +342,13 @@ def handle_fog(path: str):
             try:
                 definition = json_load(file)
             except json.JSONDecodeError:
-                print("JSON Failure: skipping entity %s" % spath)
+                print("JSON error, skipping entity %s" % spath)
                 continue
         # Handle JSON
         try:
             id_ = definition["minecraft:fog_settings"]["description"] \
                             ["identifier"]
-        except KeyError:
+        except (KeyError, TypeError):
             pass
         else:
             res.append(id_)
@@ -306,13 +360,14 @@ def handle_biome(path: str):
         try:
             d = json_load(file)
         except json.JSONDecodeError:
-            print("JSON Failure: skipping biome %s" % path)
+            print("JSON error, skipping biome %s" % path)
             return
     if (not isinstance(d, dict)
         or "biomes" not in d
         or not isinstance(d["biomes"], dict)
     ):
         print("Invalid biome definition, skipping %s" % path)
+        return
     print("Handled biome definitions %s" % path)
     return IdTable({"biome": dict.fromkeys(d["biomes"].keys())})
 
@@ -321,27 +376,165 @@ def handle_rp_block(path: str):
         try:
             d = json_load(file)
         except json.JSONDecodeError:
-            print("JSON Failure: skipping client blocks %s" % path)
+            print("JSON error, skipping client blocks %s" % path)
             return
     if not isinstance(d, dict):
         print("Invalid blocks.json, skipping %s" % path)
+        return
     print("Handled client block definition %s" % path)
     return IdTable({"block": dict.fromkeys(d.keys())})
 
+def handle_sound(path: str):
+    with open(path, "r") as file:
+        try:
+            d = json_load(file)
+        except json.JSONDecodeError:
+            print("JSON error, skipping sound %s" % path)
+            return
+    if (not isinstance(d, dict)
+        or "sound_definitions" not in d
+        or not isinstance(d["sound_definitions"], dict)
+    ):
+        print("Invalid sound definition, skipping %s" % path)
+        return
+    sounds = d["sound_definitions"]
+    print("Handled sound definitions %s" % path)
+    return IdTable({
+        "sound": dict.fromkeys(sounds.keys()),
+        "music": dict.fromkeys(key for key, val in sounds.items()
+            if (key.startswith("record.")
+                or isinstance(val, dict)
+                   and "category" in val 
+                   and val["category"] == "music"))
+    })
+
+def _recurse_dir(path: str, parents: Optional[List[str]] = None) \
+        -> List[str]:
+    if parents is None:
+        parents = []
+    res = []
+    for n in os.listdir(path):
+        fp = os.path.join(path, n)
+        if os.path.isdir(fp):
+            res.extend(_recurse_dir(fp, parents + [n]))
+        else:
+            res.append("/".join(parents + [n]))
+    return res
+
+def handle_loot(path: str):
+    res = []
+    for file in _recurse_dir(path, parents=["loot_tables"]):
+        fn, ext = os.path.splitext(file)
+        if ext == ".json":
+            res.append(fn)
+    print("Handled loot tables %s" % path)
+    return IdTable({"loot_table": dict.fromkeys('"%s"' % s for s in res)})
+
+def handle_rpac(path: str):
+    all_states = set()
+    all_acs = set()
+    for fname in os.listdir(path):
+        spath = os.path.join(path, fname)
+        if not os.path.isfile(spath):
+            continue
+        with open(spath, "r") as file:
+            try:
+                d = json_load(file)
+            except json.JSONDecodeError:
+                print("JSON error, skipping RPAC %s" % spath)
+                return
+        if (not isinstance(d, dict)
+            or "animation_controllers" not in d
+            or not isinstance(d["animation_controllers"], dict)
+        ):
+            print("Invalid RPAC definition, skipping %s" % spath)
+            continue
+        acd = d["animation_controllers"]
+        for name, def_ in acd.items():
+            if (not isinstance(def_, dict)
+                or "states" not in def_
+                or not isinstance(def_["states"], dict)
+            ):
+                print("Invalid RPAC %r in %s, skipping" % (name, spath))
+                continue
+            all_states.update(def_["states"].keys())
+        all_acs.update(acd.keys())
+    print("Handled client animation controllers %s" % path)
+    return IdTable({
+        "rpac_state": dict.fromkeys(all_states),
+        "rpac": dict.fromkeys(all_acs)
+    })
+
+def handle_rp_anim(path: str):
+    all_anims = set()
+    for fname in os.listdir(path):
+        spath = os.path.join(path, fname)
+        with open(spath, "r") as file:
+            try:
+                d = json_load(file)
+            except json.JSONDecodeError:
+                print("JSON error, skipping animation %s" % spath)
+                continue
+        if (not isinstance(d, dict)
+            or "animations" not in d
+            or not isinstance(d["animations"], dict)
+        ):
+            print("Invalid animation definition, skipping %s" % spath)
+            continue
+        all_anims.update(d["animations"].keys())
+    print("Handled animation definitions %s" % path)
+    return IdTable({"animation_ref": dict.fromkeys(all_anims)})
+
+def handle_recipe(path: str):
+    all_recipes = []
+    for fname in os.listdir(path):
+        spath = os.path.join(path, fname)
+        with open(spath, "r") as file:
+            try:
+                d = json_load(file)
+            except json.JSONDecodeError:
+                print("JSON error, skipping recipe %s" % spath)
+                continue
+        if not isinstance(d, dict):
+            print("Invalid recipe definition, skipping %s" % spath)
+            continue
+        ks = [k for k in d.keys() if k.startswith("minecraft:")]
+        if len(ks) != 1:
+            print("Invalid recipe definition, skipping %s" % spath)
+            continue
+        defi = d[ks[0]]
+        try:
+            rid = defi["description"]["identifier"]
+        except KeyError:
+            print("Invalid recipe definition, skipping %s" % spath)
+            continue
+        else:
+            all_recipes.append(rid)
+    print("Handled recipe definitions %s" % path)
+    return IdTable({"recipe": dict.fromkeys(all_recipes)})
+
+TYPE2FUNC = {
+    "lang": handle_lang,
+    "id_table": handle_json_file,
+    "json": handle_json,
+    "bp_entity": handle_bp_entity,
+    "rp_entity": handle_rp_entity,
+    "block_state": handle_missing_bs,
+    "fog": handle_fog,
+    "biome": handle_biome,
+    "rp_block": handle_rp_block,
+    "sound": handle_sound,
+    "loot_table": handle_loot,
+    "rp_ac": handle_rpac,
+    "rp_anim": handle_rp_anim,
+    "recipe": handle_recipe
+}
+
 tables = []
-if not args.input_list:
+if not hasattr(args, "input_list"):
     argparser.error("no input file")
 for type_, value in args.input_list:
-    res = {
-        "lang": handle_lang,
-        "id_table": handle_json_file,
-        "json": handle_json,
-        "bp_entity": handle_bp_entity,
-        "block_state": handle_missing_bs,
-        "fog": handle_fog,
-        "biome": handle_biome,
-        "rp_block": handle_rp_block
-    }[type_](value)
+    res = TYPE2FUNC[type_](value)
     if res is not None:
         tables.append(res)
 

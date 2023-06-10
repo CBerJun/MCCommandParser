@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import (
-    TYPE_CHECKING, List, Dict, Tuple, Any,
-    NewType, Callable, Iterable, Union, Generic, TypeVar
+    TYPE_CHECKING, List, Any,
+    Callable, Union, Generic, TypeVar
 )
 
 from .ctxutils import contextmanager
@@ -48,7 +48,7 @@ class CheckerMark(Generic[_PT]):
     """For generating semantic errors."""
     def __init__(
         self, begin: "CharLocation", end: "CharLocation",
-        checkers: Iterable[Callable[[_PT], Any]]
+        checkers: List[Callable[[_PT], Any]]
     ):
         self.begin = begin
         self.end = end
@@ -127,10 +127,7 @@ class Marker:
         self.font_marks.append(mark)
 
     @contextmanager
-    def add_checker_mark(self,
-        owner: "Node[_PT]",
-        checkers: Iterable[Callable[[_PT], Any]]
-    ):
+    def add_checker_mark(self, checkers: List[Callable[[Any], Any]]):
         begin = self.reader.get_location()
         yield lambda res: mark.set_result(res)
         end = self.reader.get_location()

@@ -34,8 +34,7 @@ from .parser import (
 from .reader import Reader, ReaderError, DIGITS, TERMINATORS, SIGNS
 from .autocompleter import (
     Suggestion, IdSuggestion,
-    str_find_rule, RULEW_OTHER, RULEW_FAILED, RULEW_STR_FIND, RuleWeight,
-    AutoCompletingUnit
+    str_find_rule, RULEW_OTHER, RULEW_FAILED, RULEW_STR_FIND, RuleWeight
 )
 from .marker import FontMark, AutoCompletingMark, Marker
 if TYPE_CHECKING:
@@ -65,6 +64,9 @@ def version_ge(version: "MCVersion") -> "VersionFilter":
 def version_lt(version: "MCVersion") -> "VersionFilter":
     return lambda v: v < version
 
+def re_word(pat: str):
+    return re.compile(r'(\b|\s+)(%s)(\b|\s+)' % pat)
+
 def dict_getter(d: dict, *path: List[str]):
     try:
         for s in itertools.chain(*path):
@@ -72,6 +74,42 @@ def dict_getter(d: dict, *path: List[str]):
     except KeyError:
         return None
     return d
+
+# Use these CAREFULLY:
+def _end_subparse(node: Node):
+    finish = Finish()
+    if isinstance(node, CompressedNode):
+        # Walk through whole tree to find `node.end`
+        node.end.branch(finish)
+        walked = []
+        def _walk(n: Node):
+            walked.append(n)
+            for branch in n.branches:
+                if branch is node.end:
+                    n.close_branches.append(branch)
+                elif branch not in walked:
+                    _walk(branch)
+        _walk(node)
+    else:
+        node.branch(finish, is_close=True)
+def _node_subparse(self: SubparsingNode, node: Node, marker: "Marker"):
+    reader = marker.reader
+    tree = Empty().branch(node)
+    tree.freeze()
+    tree.parse(marker)
+    pos = reader.get_location()
+    # XXX Since the `node`'s branch is just `Finish()`, no hint
+    # will be given after this. We need to override that finish
+    # node using `self`'s branches.
+    if not isinstance(node, SubparsingNode):
+        orig = marker.ac_marks[-1]
+        marker.ac_marks[-1] = AutoCompletingMark.from_node(
+            orig.begin, orig.end, self, marker.version
+        )
+    else:
+        marker.ac_marks.append(AutoCompletingMark.from_node(
+            pos.offset(-1), pos, self, marker.version
+        ))
 
 class Char(Node):
     argument_end = False
@@ -165,7 +203,8 @@ class Word(Node):
             raise ExpectationFailure("word")
         return word
 
-    def _suggest(self):
+    @classmethod
+    def _suggest(cls):
         return [Suggestion(
             name="autocomp.word", writes="word",
             match_rule=char_check_rule(
@@ -264,10 +303,11 @@ class QuotedString(SubparsingNode):
         else:
             return RULEW_FAILED
 
-    def _suggest(self):
+    @classmethod
+    def _suggest(cls):
         return [Suggestion(
             name="autocomp.quoted_string", writes='"string"',
-            match_rule=self._rule
+            match_rule=cls._rule
         )]
 
 class String(CompressedNode):
@@ -294,14 +334,18 @@ class IdItem(NamespacedId):
 class IdBlock(NamespacedId):
     def __init__(self):
         super().__init__("block")
-class IdFamily(String):
-    def __init__(self):
+class _StringOverrideSuggest(String):
+    def __init__(self, suggest):
         super().__init__()
-        self._word_part._suggest = lambda: [IdSuggestion("family")]
-class EntitySlot(Word):
+        self._word_part._suggest = suggest
+        self._qstr_part._suggest = lambda: []
+class IdFamily(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("family")])
+class IdEntitySlot(Word):
     def _suggest(self):
         return [IdSuggestion("entity_slot")]
-class BlockSlot(Word):
+class IdBlockSlot(Word):
     def _suggest(self):
         return [IdSuggestion("block_slot")]
 class IdDamageType(NamespacedId):
@@ -313,10 +357,9 @@ class IdEffect(NamespacedId):
 class IdEnchantment(NamespacedId):
     def __init__(self):
         super().__init__("enchantment")
-class IdEntityEvent(String):
+class IdEntityEvent(_StringOverrideSuggest):
     def __init__(self):
-        super().__init__()
-        self._word_part._suggest = lambda: [IdSuggestion("entity_event")]
+        super().__init__(lambda: [IdSuggestion("entity_event")])
 class IdFog(NamespacedId):
     def __init__(self):
         super().__init__("fog")
@@ -332,11 +375,59 @@ class IdStructure(Word):
 class IdBiome(NamespacedId):
     def __init__(self):
         super().__init__("biome")
+class IdMobEvent(NamespacedId):
+    def __init__(self):
+        super().__init__("mob_event")
+class IdMusic(Word):
+    def _suggest(self):
+        return [IdSuggestion("music")]
+class IdSound(Word):
+    def _suggest(self):
+        return [IdSuggestion("sound")]
+class IdLootTable(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("loot_table")])
+class IdAnimationRef(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("animation_ref")])
+class IdRPACState(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("rpac_state")])
+class IdRPAC(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("rpac")])
 
 def ItemData(is_test: bool):
     return (Integer()
-              .ranged(min=-1 if is_test else 0, max=32767)
-              .note("note._item_data"))
+      .ranged(min=-1 if is_test else 0, max=32767)
+      .note("note._item_data")
+    )
+
+class EntitySlot(CompressedNode):
+    def _tree(self):
+        (self
+          .branch(
+            IdEntitySlot()
+              .branch(
+                Integer()
+                  .note("note._slot_number")
+                  .branch(self.end)
+              )
+          )
+        )
+
+class BlockSlot(CompressedNode):
+    def _tree(self):
+        (self
+          .branch(
+            IdBlockSlot()
+              .branch(
+                Integer()
+                  .note("note._slot_number")
+                  .branch(self.end)
+              )
+          )
+        )
 
 _PT = TypeVar("_PT")
 
@@ -373,7 +464,7 @@ class _DynamicIdSuggestion(IdSuggestion):
             res = self.__orig_suggest()
             for s in res:
                 if isinstance(s, Suggestion):
-                    s.note = "autocomp.dynamic_id.failed"
+                    s.note = "autocomp.dynamic_id_fails"
             return res
         else:
             val = self.__map_handler(val)
@@ -481,7 +572,7 @@ class BlockSpec(CompressedNode):
                 Integer()
                   .note("note._block_data")
                   .branch(self.end),
-                version=version_le((1, 19, 70))
+                version=version_lt((1, 19, 70))
               )
               # Block state
               .branch(
@@ -490,8 +581,8 @@ class BlockSpec(CompressedNode):
                     .note("note._block_state.begin"),
                   end=Char("]")
                     .note("note._block_state.end"),
-                  seperator=Char(",")
-                    .note("note._block_state.seperator"),
+                  separator=Char(",")
+                    .note("note._block_state.separator"),
                   content=self._BlockStatePair(_get_path),
                   empty_ok=True
                 )
@@ -862,11 +953,11 @@ def PermissionState(note: Optional[str] = None):
 
 class Series(CompressedNode):
     def __init__(self, begin: Node, content: Node,
-                       seperator: Node, end: Node,
+                       separator: Node, end: Node,
                        empty_ok: bool):
         self.begin = begin
         self.content = content
-        self.seperator = seperator
+        self.separator = separator
         self.end_ = end
         self.empty_ok = empty_ok
         super().__init__()
@@ -878,7 +969,7 @@ class Series(CompressedNode):
             .branch(
               self.content
                 .branch(
-                  self.seperator
+                  self.separator
                     .branch(self.content)
                 )
                 .branch(
@@ -917,8 +1008,8 @@ class SelectorArg(CompressedNode):
                 .note("note._selector.complex.hasitem.begin.object"),
               end=Char("}")
                 .note("note._selector.complex.hasitem.end.object"),
-              seperator=Char(",")
-                .note("note._selector.complex.hasitem.seperator.object"),
+              separator=Char(",")
+                .note("note._selector.complex.hasitem.separator.object"),
               content=self._HasItemArg(),
               empty_ok=False
             )
@@ -935,8 +1026,8 @@ class SelectorArg(CompressedNode):
                     .note("note._selector.complex.hasitem.begin.array"),
                   end=Char("]")
                     .note("note._selector.complex.hasitem.end.array"),
-                  seperator=Char(",")
-                    .note("note._selector.complex.hasitem.seperator.array"),
+                  separator=Char(",")
+                    .note("note._selector.complex.hasitem.separator.array"),
                   content=self._hasitem_object(),
                   empty_ok=False
                 )
@@ -950,7 +1041,7 @@ class SelectorArg(CompressedNode):
                     ("item", IdItem()),
                     ("data", ItemData(is_test=True)),
                     ("quantity", IntRange()),
-                    ("location", EntitySlot()),
+                    ("location", IdEntitySlot()),
                     ("slot", IntRange())
                 ):
                     self.branch(
@@ -1058,8 +1149,8 @@ class SelectorArg(CompressedNode):
                 .note("note._selector.complex.scores.begin"),
               end=Char("}")
                 .note("note._selector.complex.scores.end"),
-              seperator=Char(",")
-                .note("note._selector.complex.scores.seperator"),
+              separator=Char(",")
+                .note("note._selector.complex.scores.separator"),
               content=self._ScoresArg(),
               empty_ok=False
             )),
@@ -1081,8 +1172,8 @@ class SelectorArg(CompressedNode):
                 .note("note._selector.complex.haspermission.begin"),
               end=Char("}")
                 .note("note._selector.complex.haspermission.end"),
-              seperator=Char(",")
-                .note("note._selector.complex.haspermission.seperator"),
+              separator=Char(",")
+                .note("note._selector.complex.haspermission.separator"),
               content=self._HasPermissionArg(),
               empty_ok=False
             ), {"version": version_ge((1, 19, 80))}),
@@ -1120,8 +1211,8 @@ class Selector(CompressedNode):
                         .note("note._selector.complex.begin"),
                       end=Char("]")
                         .note("note._selector.complex.end"),
-                      seperator=Char(",")
-                        .note("note._selector.complex.seperator"),
+                      separator=Char(",")
+                        .note("note._selector.complex.separator"),
                       content=SelectorArg(),
                       empty_ok=False
                     )
@@ -1196,28 +1287,39 @@ class ScoreSpec(CompressedNode):
           )
         )
 
-class _RawtextTranslate(SubparsingNode):
-    RE_SUBSTITUTION = re.compile(r"%%[s1-9]")
+class RegexNode(SubparsingNode):
+    """Use Regular Expression to generate font marks (i.e. highlight)
+    the argument.
+    """
+    RE_DEFS = ()
+
+    def _re_parse(self, marker: "Marker"):
+        raise NotImplementedError("should be implemented by subclass")
 
     def _parse(self, marker: "Marker"):
         # Parsing
         reader = marker.reader
         pos_begin = reader.get_location()
-        string = reader.read_until_eol()
+        self._re_parse(marker)
         pos_end = reader.get_location()
+        string = reader.get_slice(pos_begin, pos_end)
         # Marking
-        marker.font_marks.append(FontMark(
-            pos_begin, pos_end, Font.string
-        ))
-        for m in re.finditer(self.RE_SUBSTITUTION, string):
-            span = m.span()
-            marker.font_marks.append(FontMark(
-                pos_begin.offset(span[0]), pos_begin.offset(span[1]),
-                Font.meta
-            ))
-        marker.ac_marks.append(AutoCompletingMark.from_node(
-            pos_begin, pos_end, self, marker.version
-        ))
+        for regex, font in self.RE_DEFS:
+            for m in re.finditer(regex, string):
+                start, end = m.span()
+                marker.font_marks.append(FontMark(
+                    pos_begin.offset(start), pos_begin.offset(end), font
+                ))
+
+class _RawtextTranslate(RegexNode):
+    default_font = Font.string
+    RE_DEFS = (
+        (re.compile(r"%%[s1-9]"), Font.meta),
+    )
+
+    def _re_parse(self, marker: "Marker"):
+        with marker.add_ac_mark(node=self):
+            marker.reader.read_until_eol()
 
 class _JsonString(SubparsingNode):
     argument_end = False
@@ -1436,20 +1538,11 @@ class Json(SubparsingNode):
             self.reader.next()
 
     def __parse_node(self, node: Node):
-        tree = Empty().branch(node.finish())
-        tree.freeze()
-        tree.parse(self.marker)
-        pos = self.reader.get_location()
-        # XXX
-        if not isinstance(node, SubparsingNode):
-            orig = self.marker.ac_marks[-1]
-            self.marker.ac_marks[-1] = AutoCompletingMark.from_node(
-                orig.begin, orig.end, self, self.marker.version
-            )
-        else:
-            self.marker.ac_marks.append(AutoCompletingMark.from_node(
-                pos.offset(-1), pos, self, self.marker.version
-            ))
+        # Since we do `_end_subparse(node)` directly, node should be
+        # a single node and should not be a embedded tree.
+        _end_subparse(node)
+        tree = Empty().branch(node)
+        return _node_subparse(self, node, self.marker)
 
     def __float(self):
         # Exponent is deprecated in Minecraft
@@ -1469,7 +1562,7 @@ class Json(SubparsingNode):
         tree = Series(
           begin=Char("{"),
           end=Char("}"),
-          seperator=Char(","),
+          separator=Char(","),
           content=_JsonKeyValPair(self.__difinition, path),
           empty_ok=True
         )
@@ -1483,7 +1576,7 @@ class Json(SubparsingNode):
         tree = Series(
           begin=Char("["),
           end=Char("]"),
-          seperator=Char(","),
+          separator=Char(","),
           content=Json(self.__difinition, "#value", path),
           empty_ok=True
         )
@@ -1617,6 +1710,36 @@ def RawText():
     },
         name="$rawtext"
     )
+
+class Molang(RegexNode):
+    RE_DEFS = (
+        (re_word(r"return|this|loop|for_each|break|continue"),
+         Font.molang_keyword),
+        (re.compile(
+            r"\b(q(uery)?|v(ariable)?|math|t(emp)?|c(ontext)?"
+            r")(?=\s*\.)"),
+         Font.molang_class),
+        (re.compile(r'^"|"$'), Font.meta),  # Quoted string
+        (re.compile(r"'[^']*'"), Font.string),
+        (re_word(r"->|==|>=|<=|>|<|!=|=|!|&&|\|\||\+|-|\*|/|;|\?\?|\?|:|\."),
+         Font.meta),  # Operators
+        (re.compile(r'(?<=^")!'), Font.meta),  # Unary special case
+        (re_word(r"\d+(\.(\d+)?)?"), Font.numeric),
+    )
+
+    def _re_parse(self, marker: "Marker"):
+        tree = String()
+        tree._qstr_part.close_branches.append(tree.end)
+        tree._word_part.close_branches.append(tree.end)
+        tree.note(self.note_)
+        submarker = Marker(marker.reader, version=marker.version)
+        _end_subparse(tree)
+        _node_subparse(self, tree, submarker)
+        submarker.font_marks.clear()  # Override font marks
+        submarker.merge_to(marker)
+
+    def _suggest(self):
+        return Word._suggest() + QuotedString._suggest()
 
 class EOL(Finish):
     # End Of Line
@@ -1873,12 +1996,50 @@ def command():
         Keyword("loot")
           .note("note.loot.origin.loot")
           .branch(
-            String()
-              .note("note.loot.origin.loot_table")
+            IdLootTable()
               .branch(_loot_tool)
               .finish(EOL)
           )
       )
+    )
+
+    _replaceitem_end = (IdItem()
+      .branch(
+        Integer()
+          .note("note.replaceitem.amount")
+          .ranged(min=1, max=64)
+          .branch(
+            ItemData(is_test=False)
+              .branch(
+                ItemComponents()
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
+    _replaceitem = (Empty()
+      .branch(
+        NotedEnumerate("destroy", "keep",
+                       note_template="note.replaceitem.modes.%s")
+          .branch(_replaceitem_end)
+      )
+      .branch(_replaceitem_end)
+    )
+
+    _spawnevt_nametag = (Empty()
+      .branch(
+        Wildcard(IdEntityEvent(), wildcard_note="note._wildcard_entity_event")
+          .branch(
+            String()
+              .note("note._name_tag")
+              .finish(EOL)
+          )
+          .finish(EOL)
+      )
+      .finish(EOL)
     )
 
     return (command_root
@@ -2483,7 +2644,7 @@ def command():
                         EntitySlot()
                           .branch(
                             Integer()
-                              .note("note.loop.replace.slot_count")
+                              .note("note.loot.replace.slot_count")
                               .branch(_loot_origin)
                           )
                           .branch(_loot_origin)
@@ -2499,7 +2660,7 @@ def command():
                         BlockSlot()
                           .branch(
                             Integer()
-                              .note("note.loop.replace.slot_count")
+                              .note("note.loot.replace.slot_count")
                               .branch(_loot_origin)
                           )
                           .branch(_loot_origin)
@@ -2508,6 +2669,249 @@ def command():
                 version=version_ge((1, 19, 40))
               ),
             version=version_ge((1, 19, 0))
+          )
+      )
+      .branch(
+        CommandName("me")
+          .branch(
+            BareText(empty_ok=True)
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("mobevent")
+          .branch(
+            Keyword("events_enabled")
+              .note("note.mobevent.events_enabled")
+              .branch(
+                Boolean()
+                  .note("note.mobevent.value")
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.mobevent.query")
+              )
+          )
+          .branch(
+            IdMobEvent()
+              .branch(
+                Boolean()
+                  .note("note.mobevent.value")
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.mobevent.query")
+              )
+          )
+      )
+      .branch(
+        CommandName("tell", "msg", "w")
+          .branch(
+            Selector()
+              .branch(
+                BareText(empty_ok=True)
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("music")
+          .branch(
+            NotedEnumerate("play", "queue",
+                           note_template="note.music.modes.%s")
+              .branch(
+                IdMusic()
+                  .branch(
+                    Float()
+                      .note("note.music.volume")
+                      .ranged(min=0, max=1)
+                      .branch(
+                        Float()
+                          .note("note.music.fade_in")
+                          .ranged(min=0, max=10)
+                          .branch(
+                            NotedEnumerate("play_once", "loop",
+                                note_template="note.music.loop_modes.%s")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("stop")
+              .note("note.music.modes.stop")
+              .branch(
+                Float()
+                  .note("note.music.fade_out")
+                  .ranged(min=0, max=10)
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("volume")
+              .note("note.music.modes.volume")
+              .branch(
+                Float()
+                  .note("note.music.volume")
+                  .ranged(min=0, max=1)
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("op")
+          .branch(
+            Selector()
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("playanimation")
+          .branch(
+            Selector()
+              .branch(
+                IdAnimationRef()
+                  .branch(
+                    IdRPACState()
+                      .branch(
+                        Float()
+                          .note("note.playanimation.blend")
+                          .ranged(min=0)
+                          .branch(
+                            Molang()
+                              .note("note.playanimation.stop_exp")
+                              .branch(
+                                IdRPAC()
+                                  .finish(EOL)
+                              )
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("playsound")
+          .branch(
+            IdSound()
+              .branch(
+                Selector()
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        Float()
+                          .note("note.playsound.volume")
+                          .ranged(min=0)
+                          .branch(
+                            Float()
+                              .note("note.playsound.pitch")
+                              .ranged(min=0, max=256)
+                              .branch(
+                                Float()
+                                  .note("note.playsound.min_volume")
+                                  .ranged(min=0, max=1)
+                                  .finish(EOL)
+                              )
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("reload")
+          .finish(EOL)
+      )
+      .branch(
+        CommandName("replaceitem")
+          .branch(
+            Keyword("entity")
+              .note("note.replaceitem.entity")
+              .branch(
+                EntitySlot()
+                  .branch(_replaceitem)
+              )
+          )
+          .branch(
+            Keyword("block")
+              .note("note.replaceitem.block")
+              .branch(
+                BlockSlot()
+                  .branch(_replaceitem)
+              )
+          )
+      )
+      .branch(
+        CommandName("ride")
+          .branch(
+            Selector()
+              .branch(
+                Keyword("start_riding")
+                  .note("note.ride.mount")
+                  .branch(
+                    Selector()
+                      .branch(
+                        NotedEnumerate("teleport_rider", "teleport_ride",
+                                       note_template="note.ride.tp_modes.%s")
+                          .branch(
+                            NotedEnumerate("if_group_fits", "until_full",
+                                note_template="note.ride.fill_modes.%s")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("stop_riding")
+                  .note("note.ride.dismount")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("evict_riders")
+                  .note("note.ride.dismount_rider")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("summon_rider")
+                  .note("note.ride.summon_rider")
+                  .branch(
+                    IdEntity()
+                      .branch(_spawnevt_nametag)
+                  )
+              )
+              .branch(
+                Keyword("summon_ride")
+                  .note("note.ride.summon_ride")
+                  .branch(
+                    IdEntity()
+                      .branch(
+                        NotedEnumerate(
+                            "skip_riders", "no_ride_change", "reassign_rides",
+                            note_template="note.ride.ride_modes.%s"
+                        )
+                          .branch(_spawnevt_nametag)
+                      )
+                      .finish(EOL)
+                  )
+              )
           )
       )
       .branch(
