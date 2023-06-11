@@ -22,16 +22,6 @@ from typing import (
     TYPE_CHECKING, List, Tuple, Type, TypeVar, Any,
     Optional, Callable, Generic, Union
 )
-try:
-    from typing import Final
-except ImportError:
-    class _FinalMeta(type):
-        # No __class_getitem__ in old version where Final is unavailable
-        def __getitem__(self, v):
-            assert isinstance(v, type) or v is None
-            return v
-    class Final(metaclass=_FinalMeta):
-        pass
 from enum import Enum
 
 from .ctxutils import ExitStack
@@ -274,7 +264,7 @@ class Node(Generic[_PT]):
         node = self
         is_close, is_arg_end = False, False
         prev_node = None
-        prev_state = None
+        prev_state = reader.state_save()
         info_idx = 0
         info = []
         info_len = 0
@@ -298,13 +288,14 @@ class Node(Generic[_PT]):
                         # Do ac mark when option is True OR this node
                         # is the root. (There must be some mark
                         # marking the root for autocompleter.)
-                        stack.enter_context(marker.add_ac_mark(node=node))
+                        stack.enter_context(
+                            marker.add_ac_mark(node=node))
                     if node.font_ is not None:
-                        stack.enter_context(marker.add_font_mark(font=node.font_))
+                        stack.enter_context(
+                            marker.add_font_mark(font=node.font_))
                     if node.checkers:
                         callback = stack.enter_context(
-                            marker.add_checker_mark(node.checkers)
-                        )
+                            marker.add_checker_mark(node.checkers))
                     else:
                         callback = None
                     # The child itself
@@ -354,20 +345,20 @@ class Node(Generic[_PT]):
         return res
 
 class Finish(Node):
-    argument_end: Final[bool] = False
-    do_ac_mark: Final[bool] = False
+    argument_end = False
+    do_ac_mark = False
 
     def _parse(self, reader: Reader):
         pass
 
 class Empty(Node):
-    argument_end: Final[bool] = False
-    do_ac_mark: Final[bool] = False
+    argument_end = False
+    do_ac_mark = False
 
     def _parse(self, reader: Reader):
         pass
 
-    def note(self, note: str):
+    def note(self, note: Union[str, None]):
         for branch in self.branches:
             branch.note(note)
         return self

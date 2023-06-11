@@ -18,7 +18,6 @@
 for performance reason.
 PLEASE USE THIS CAREFULLY, ESPECIALLY WHEN DEALING WITH EXCEPTIONS.
 """
-from typing import TypeVar, ContextManager
 
 __all__ = ["contextmanager", "ExitStack"]
 
@@ -48,8 +47,6 @@ def contextmanager(func):
         return _GeneratorContextManager(func(*args, **kwds))
     return _decorated
 
-_CT = TypeVar("_CT")
-
 class ExitStack:
     """*Similar* to `contextlib.ExitStack` but is faster.
     NOTE Use this carefully since we use a special way to handle
@@ -67,7 +64,8 @@ class ExitStack:
         for cm, exit in self.exits:
             exit(cm, None, None, None)
 
-    def enter_context(self, cm: ContextManager[_CT]) -> _CT:
+    def enter_context(self, cm):
+        # `cm` is supposed to be `ContextManager`
         res = cm.__enter__()
         self.exits.insert(0, (cm, type(cm).__exit__))
         return res

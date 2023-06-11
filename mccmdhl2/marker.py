@@ -20,7 +20,7 @@ from typing import (
 )
 
 from .ctxutils import contextmanager
-from .parser import Font, SemanticError, Empty
+from .parser import Font, SemanticError
 from .autocompleter import AutoCompletingUnit
 if TYPE_CHECKING:
     from .reader import Reader, CharLocation

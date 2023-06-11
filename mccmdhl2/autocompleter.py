@@ -18,16 +18,13 @@
 
 from typing import (
     TYPE_CHECKING, Optional, List, Dict, Tuple,
-    Union, Any, Callable, Iterable, NewType
+    Union, Any, Callable, NewType
 )
-import os
 import json
-import itertools
 
 from .reader import CharLocation
 if TYPE_CHECKING:
-    from .parser import Node
-    from .marker import Marker, Mark
+    from .marker import Marker, AutoCompletingMark
     from .translator import Translator
 
 __all__ = [
@@ -83,7 +80,7 @@ class IdTable:
     def empty_table(cls):
         return cls({})
 
-Refactor = Union[None, Callable[["Suggestion"], None]]
+Refactor = Union[None, Callable[["HandledSuggestion"], None]]
 
 class Suggestion:
     def __init__(self, name: str, writes: str,
@@ -229,7 +226,7 @@ class AutoCompleter:
         # Filter suggestions
         res1: List[Union[Suggestion, HandledSuggestion]] = []
         res1_extra: List[HandledSuggestion] = []
-        def _conv(suggs: List[Union[Suggestion, IdSuggestion]]) \
+        def _expand(suggs: List[Union[Suggestion, IdSuggestion]]) \
                 -> List[Union[Suggestion, HandledSuggestion]]:
             # Expand `IdSuggestion`s.
             res = []
@@ -245,7 +242,7 @@ class AutoCompleter:
             # For instance, '=' for '@e[x'
             have_hidden_sugg = False
             for suggest, is_close, is_arg_end in unit.info:
-                for sugg in _conv(suggest()):
+                for sugg in _expand(suggest()):
                     if (unit.argument_end or is_arg_end):
                         if self.reader.is_terminating_char(sugg.writes[0]):
                             res1.append(sugg)
@@ -275,7 +272,7 @@ class AutoCompleter:
             # 'scoreboard pl')
             for suggest, is_close, is_arg_end in unit.info:
                 if not is_close:
-                    res1.extend(_conv(suggest()))
+                    res1.extend(_expand(suggest()))
 
         # Convert all `Suggestion`s to `HandledSuggestion`
         def _conv(s: Union[Suggestion, HandledSuggestion]) \

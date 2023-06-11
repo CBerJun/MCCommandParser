@@ -255,7 +255,7 @@ class QuotedString(SubparsingNode):
     def _parse(self, marker: "Marker"):
         reader = marker.reader
         pos_begin = reader.get_location()
-        with marker.add_font_mark(Font.meta):  # Opening '"'
+        with marker.add_font_mark(Font.meta):  # type: ignore # Opening '"'
             if reader.next() != '"':
                 raise ExpectationFailure("quoted_str")
         chars = []
@@ -1208,7 +1208,7 @@ class SelectorArg(CompressedNode):
               empty_ok=False
             ), {"version": version_ge((1, 19, 80))}),
         ):
-            _handle(*args)
+            _handle(*args)  # type: ignore
 
 class Selector(CompressedNode):
     def __init__(self, note: Optional[str] = None):
@@ -1334,7 +1334,7 @@ class RegexNode(SubparsingNode):
         pos_end = reader.get_location()
         string = reader.get_slice(pos_begin, pos_end)
         # Marking
-        for regex, font in self.RE_DEFS:
+        for regex, font in self.RE_DEFS:  # type: ignore
             for m in re.finditer(regex, string):
                 start, end = m.span()
                 marker.font_marks.append(FontMark(
@@ -1348,7 +1348,7 @@ class _RawtextTranslate(RegexNode):
     )
 
     def _re_parse(self, marker: "Marker"):
-        with marker.add_ac_mark(node=self):
+        with marker.add_ac_mark(node=self):  # type: ignore
             marker.reader.read_until_eol()
 
 class _JsonString(SubparsingNode):
@@ -1777,8 +1777,6 @@ class Molang(RegexNode):
 
 class EOL(Finish):
     # End Of Line
-    argument_end = False
-
     def _parse(self, reader: Reader):
         if reader.is_line_end(reader.peek()):
             reader.next()

@@ -3,3 +3,4 @@ stats/import
 stats/parse
 stats/parse_sep
 mccmdhl2/res/id_table.json
+.vscode

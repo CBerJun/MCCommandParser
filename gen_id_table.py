@@ -26,7 +26,7 @@ import sys
 import json
 import argparse
 from mccmdhl2 import IdTable
-from typing import List, Tuple, Optional
+from typing import List, Optional
 
 JSON_TOKENIZE = re.compile(
     r"""

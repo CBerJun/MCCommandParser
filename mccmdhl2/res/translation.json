@@ -164,6 +164,28 @@
                         "blocks": "Blocks on which this item can be placed"
                     }
                 }
+            },
+            "$rawtext@object": {
+                "_keys": {
+                    "rawtext": "Specify a JSON rawtext"
+                },
+                "!rawtext@array": {
+                    "#value@object": {
+                        "_keys": {
+                            "text": "Plain text",
+                            "translate": "Localization key / Substituted string",
+                            "with": "Substitutions (used with `translate`)",
+                            "score": "Value on scoreboard",
+                            "selector": "Name of entities"
+                        },
+                        "!score@object": {
+                            "_keys": {
+                                "objective": "Scoreboard objective",
+                                "name": "Target"
+                            }
+                        }
+                    }
+                }
             }
         },
         "help": {
