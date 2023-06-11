@@ -212,7 +212,7 @@ class Node(Generic[_PT]):
             cls = Finish
         return self.branch(cls())
 
-    def note(self, note: str):
+    def note(self, note: Union[str, None]):
         if self.note_ is not None:
             raise ValueError("note set already")
         self.note_ = note
@@ -321,8 +321,8 @@ class Node(Generic[_PT]):
                 else:
                     node, is_close, is_arg_end = info[info_idx]
             else:
-                if callback:
-                    callback(parse_res)
+                if callback:  # type: ignore
+                    callback(parse_res)  # type: ignore
                 if isinstance(node, Finish):
                     break
                 info = node.get_info_v(marker.version)

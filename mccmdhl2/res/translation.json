@@ -176,11 +176,6 @@
         },
         "ability": {
             "root": "[EDU] Manage players' abilities",
-            "abilities": {
-                "mayfly": "Allow player to fly",
-                "worldbuilder": "Give player Worldbuilder",
-                "mute": "Mute the player"
-            },
             "query": {
                 "unknown": "Unknown query",
                 "ability": "Show state of given ability"
@@ -191,6 +186,35 @@
             "root": "Lock/Unlock Alwaysday",
             "lock": "Alwaysday lock",
             "set": "Set Alwaysday to given value"
+        },
+        "camera": {
+            "root": "Manage cameras (player's view)",
+            "clear": "Revert camera to original state",
+            "fade": {
+                "root": "Play a fade effect on camera",
+                "color": {
+                    "root": "Set view color",
+                    "r": "Red scale",
+                    "g": "Green scale",
+                    "b": "Blue scale"
+                },
+                "time": {
+                    "root": "Set fade time",
+                    "in": "Fade-in time (seconds)",
+                    "hold": "Hold time (seconds)",
+                    "out": "Fade-out time (seconds)"
+                }
+            },
+            "set": {
+                "root": "Set camera position & rotation",
+                "default": "Use the preset's default settings",
+                "pos": "Set position of camera",
+                "rot": "Set rotation of camera",
+                "ease": {
+                    "root": "Set easing function when changing camera",
+                    "time": "Ease time (seconds)"
+                }
+            }
         },
         "camerashake": {
             "root": "Apply shaking to player's view",
@@ -447,6 +471,9 @@
         "op": {
             "root": "Make players Operator of game"
         },
+        "particle": {
+            "root": "Generate a particle effect"
+        },
         "playanimation": {
             "root": "Trigger entity animations",
             "blend": "Blend out time (seconds)",
@@ -457,6 +484,11 @@
             "volume": "Volume (0~1; >1 -> range set to 16 * volume)",
             "pitch": "Pitch",
             "min_volume": "Volume for players out of sound's normal range"
+        },
+        "recipe": {
+            "root": "Manage players' recipes",
+            "give": "Give/Unlock a recipe",
+            "take": "Take/Lock a recipe"
         },
         "reload": {
             "root": "Reload functions & scripts in behavior packs"
@@ -491,6 +523,9 @@
                 "no_ride_change": "Skip if the rider already has a ride or a rider",
                 "reassign_rides": "Let the rider dismount before proceeding if it already has a ride"
             }
+        },
+        "say": {
+            "root": "Send all players a message"
         },
         "tellraw": {
             "root": "Send specified players a message using rawtext"
@@ -569,7 +604,12 @@
             "loot_table": "[Loot Table Path]",
             "rpac_state": "[Anim. Controller State]",
             "animation_ref": "[Entity Anim. Reference]",
-            "rpac": "[Animation Controller]"
+            "rpac": "[Animation Controller]",
+            "recipe": "[Recipe]",
+            "camera_preset": "[Camera Preset]",
+            "ease_type": "[Easing Function]",
+            "ability": "[Ability]",
+            "particle": "[Particle]"
         },
         "dynamic_id_fails": "(Can't find in ID table)"
     },

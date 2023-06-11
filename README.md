@@ -2,9 +2,11 @@
 This project is a parser for Minecraft Bedrock command, which supports:
  * syntax highlighting
  * error reporting
- * auto-completing, with hints for every branch that support localization
-   (i.e. hint in different languages)
- * different versions of command system (from `1.19.0` to `1.19.80`!)
+ * auto-completing with:
+   - hints for every branch that explain the usages
+   - ID hints (e.g. item ID and entity ID)
+   - localization support (i.e. hint in different languages)
+ * different versions of command system (from `1.19.0` to `1.20.10`!)
 
 These almost make an IDE for command!
 Use Python (3.5+) to run `main.py` and try the "IDE" we make.
@@ -91,7 +93,7 @@ the translation system (`mccmdhl2/translator.py` and
 ## Why `mccmdhl2`?
 Why is the package named `mccmdhl2`?
 
-`mc` is the short name of `Minecraft`.
+`mc` is the short name of Minecraft.
 `cmd` is the short form of command.
 `hl` means highlighter.
 `mccmdhl` is actually the package name of my

@@ -396,6 +396,21 @@ class IdRPACState(_StringOverrideSuggest):
 class IdRPAC(_StringOverrideSuggest):
     def __init__(self):
         super().__init__(lambda: [IdSuggestion("rpac")])
+class IdRecipe(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("recipe")])
+class IdCameraPreset(NamespacedId):
+    def __init__(self):
+        super().__init__("camera_preset")
+class IdEaseType(Word):
+    def _suggest(self):
+        return [IdSuggestion("ease_type")]
+class IdAbility(Word):
+    def _suggest(self):
+        return [IdSuggestion("ability")]
+class IdParticle(NamespacedId):
+    def __init__(self):
+        super().__init__("particle")
 
 def ItemData(is_test: bool):
     return (Integer()
@@ -443,8 +458,9 @@ def ResultTracked(node: Node[_PT], callback: Callable[[_PT], Any]):
 
 class _DynamicIdSuggestion(IdSuggestion):
     def __init__(self, path: List[str],
-        orig_suggest: Callable[[], Union[Suggestion, "HandledSuggestion"]],
-        map_handler: Callable[[Union[dict, list]], List[str]],
+        orig_suggest: Callable[[], List[Union[Suggestion, IdSuggestion]]],
+        map_handler: Callable[[Union[dict, list]],
+                              Union[List[str], Dict[str, str]]],
         note: Union[str, None] = None
     ):
         super().__init__(path[0], note)
@@ -460,11 +476,14 @@ class _DynamicIdSuggestion(IdSuggestion):
                 if not isinstance(val, dict):
                     raise TypeError
                 val = val[k]
-        except (KeyError, TypeError) as err:
-            res = self.__orig_suggest()
-            for s in res:
+        except (KeyError, TypeError):
+            res = []
+            for s in self.__orig_suggest():
                 if isinstance(s, Suggestion):
                     s.note = "autocomp.dynamic_id_fails"
+                    res.append(s)
+                elif isinstance(s, IdSuggestion):
+                    res.extend(s.resolve(id_table))
             return res
         else:
             val = self.__map_handler(val)
@@ -492,7 +511,7 @@ def DynamicId(node: Node, path_getter: Callable[[], List[str]],
     def _new_suggest():
         return [_DynamicIdSuggestion(
             path_getter(), orig_suggest, map_handler)]
-    node._suggest = _new_suggest
+    node._suggest = _new_suggest  # type: ignore
     return node
 
 class BlockSpec(CompressedNode):
@@ -513,12 +532,31 @@ class BlockSpec(CompressedNode):
                     l.append(self.__key)
                     return l
                 return _res
-            def _kmap_handler(map_: Dict[str, Dict[str, List[str]]]):
-                res = []
+            def _kmap_handler(map_):
+                # `map_` is supposed to be `Dict[str, Dict[str, List[Any]]]`
+                # e.g. {"int": {"foo_state": [0, 1, 2, 3]}}
+                res: List[str] = []
                 for k in ("int", "bool", "str"):
                     if k in map_:
                         res.extend('"%s"' % s for s in map_[k].keys())
                 return res
+            _value = (Empty()
+              .branch(
+                DynamicId(QuotedString(), _get_vpath("str"))
+                  .note("note._block_state.value")
+                  .branch(self.end)
+              )
+              .branch(
+                DynamicId(Integer(), _get_vpath("int"))
+                  .note("note._block_state.value")
+                  .branch(self.end)
+              )
+              .branch(
+                DynamicId(Boolean(), _get_vpath("bool"))
+                  .note("note._block_state.value")
+                  .branch(self.end)
+              )
+            )
             (self
               .branch(
                 DynamicId(
@@ -528,21 +566,13 @@ class BlockSpec(CompressedNode):
                   .note("note._block_state.key")
                   .branch(
                     Char(":")
-                      .branch(
-                        DynamicId(QuotedString(), _get_vpath("str"))
-                          .note("note._block_state.value")
-                          .branch(self.end)
-                      )
-                      .branch(
-                        DynamicId(Integer(), _get_vpath("int"))
-                          .note("note._block_state.value")
-                          .branch(self.end)
-                      )
-                      .branch(
-                        DynamicId(Boolean(), _get_vpath("bool"))
-                          .note("note._block_state.value")
-                          .branch(self.end)
-                      )
+                      .branch(_value),
+                    version=version_lt((1, 20, 0))
+                  )
+                  .branch(
+                    Char("=")
+                      .branch(_value),
+                    version=version_ge((1, 20, 0))
                   )
               )
             )
@@ -1407,7 +1437,7 @@ class _JsonString(SubparsingNode):
                 break
             if char == "\\":
                 char2 = reader.next()
-                esc = self.ESCAPES.get(char2)
+                esc = self.ESCAPES.get(char2)  # type: ignore
                 if esc:
                     chars.append(esc)
                     col_map.append(i)
@@ -1549,7 +1579,7 @@ class Json(SubparsingNode):
         # and `0` prefix is allowed
         self.__parse_node(Float())
 
-    def __string(self) -> str:
+    def __string(self):
         self.__parse_node(_JsonString(
             self.__difinition, self.__path, self.__name, ac_node=self
         ))
@@ -1558,6 +1588,8 @@ class Json(SubparsingNode):
         p = self.__path.copy()
         p.append("%s@object" % self.__name)
         o = dict_getter(self.__difinition, p, ["#redirect"])
+        if not (o is None or isinstance(o, list)):
+            raise ValueError("#redirect should be an array of string")
         path = o if o is not None else p
         tree = Series(
           begin=Char("{"),
@@ -1572,6 +1604,8 @@ class Json(SubparsingNode):
         p = self.__path.copy()
         p.append("%s@array" % self.__name)
         o = dict_getter(self.__difinition, p, ["#redirect"])
+        if not (o is None or isinstance(o, list)):
+            raise ValueError("#redirect should be an array of string")
         path = o if o is not None else p
         tree = Series(
           begin=Char("["),
@@ -1776,6 +1810,69 @@ def CommandName(name: str, *alias: str):
 
 def command():
     command_root = Empty()
+
+    _camera_color = (Keyword("color")
+      .note("note.camera.fade.color.root")
+      .branch(
+        Float()
+          .note("note.camera.fade.color.r")
+          .ranged(min=0, max=1)
+          .branch(
+            Float()
+              .note("note.camera.fade.color.g")
+              .ranged(min=0, max=1)
+              .branch(
+                Float()
+                  .note("note.camera.fade.color.b")
+                  .ranged(min=0, max=1)
+                  .finish(EOL)
+              )
+          ),
+        version=version_lt((1, 20, 10))
+      )
+      .branch(
+        Integer()
+          .note("note.camera.fade.color.r")
+          .ranged(min=0, max=255)
+          .branch(
+            Integer()
+              .note("note.camera.fade.color.g")
+              .ranged(min=0, max=255)
+              .branch(
+                Integer()
+                  .note("note.camera.fade.color.b")
+                  .ranged(min=0, max=255)
+                  .finish(EOL)
+              )
+          ),
+        version=version_ge((1, 20, 10))
+      )
+    )
+    _camera_rot = (Keyword("rot")
+      .note("note.camera.set.rot")
+      .branch(
+        YawPitch()
+          .finish(EOL)
+      )
+    )
+    _camera_set_end = (Empty()
+      .branch(
+        Keyword("default")
+          .note("note.camera.set.default")
+          .finish(EOL)
+      )
+      .branch(
+        Keyword("pos")
+          .note("note.camera.set.pos")
+          .branch(
+            Pos3D()
+              .branch(_camera_rot)
+              .finish(EOL)
+          )
+      )
+      .branch(_camera_rot)
+      .finish(EOL)
+    )
 
     def _difficulty() -> Dict[str, str]:
         res: Dict[str, str] = {}
@@ -2065,8 +2162,7 @@ def command():
           .branch(
             Selector()
               .branch(
-                NotedEnumerate("mayfly", "worldbuilder", "mute",
-                               note_template="note.ability.abilities.%s")
+                IdAbility()
                   .branch(
                     Boolean()
                       .note("note.ability.set")
@@ -2094,6 +2190,89 @@ def command():
             EOL()
               .note("note.alwaysday.lock")
           )
+      )
+      .branch(
+        CommandName("camera")
+          .branch(
+            Selector()
+              .branch(
+                Keyword("clear")
+                  .note("note.camera.clear")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("fade")
+                  .note("note.camera.fade.root")
+                  .branch(_camera_color)
+                  .branch(
+                    Keyword("time")
+                      .note("note.camera.fade.time.root")
+                      .branch(
+                        Float()
+                          .note("note.camera.fade.time.in")
+                          .ranged(min=0)
+                          .branch(
+                            Float()
+                              .note("note.camera.fade.time.hold")
+                              .ranged(min=0)
+                              .branch(
+                                Float()
+                                  .ranged(min=0)
+                                  .note("note.camera.fade.time.out")
+                                  .branch(_camera_color)
+                                  .finish(EOL)
+                              )
+                          )
+                      ),
+                    version=version_lt((1, 20, 10))
+                  )
+                  .branch(
+                    Keyword("time")
+                      .note("note.camera.fade.time.root")
+                      .branch(
+                        Float()
+                          .note("note.camera.fade.time.in")
+                          .ranged(min=0, max=10)
+                          .branch(
+                            Float()
+                              .note("note.camera.fade.time.hold")
+                              .ranged(min=0, max=10)
+                              .branch(
+                                Float()
+                                  .note("note.camera.fade.time.out")
+                                  .ranged(min=0, max=10)
+                                  .branch(_camera_color)
+                                  .finish(EOL)
+                              )
+                          )
+                      ),
+                    version=version_ge((1, 20, 10))
+                  )
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("set")
+                  .note("note.camera.set.root")
+                  .branch(
+                    IdCameraPreset()
+                      .branch(
+                        Keyword("ease")
+                          .note("note.camera.set.ease.root")
+                          .branch(
+                            Float()
+                              .note("note.camera.set.ease.time")
+                              .ranged(min=0)
+                              .branch(
+                                IdEaseType()
+                                  .branch(_camera_set_end)
+                              )
+                          )
+                      )
+                      .branch(_camera_set_end)
+                  )
+              )
+          ),
+        version=version_ge((1, 20, 0))
       )
       .branch(
         CommandName("camerashake")
@@ -2773,6 +2952,17 @@ def command():
           )
       )
       .branch(
+        CommandName("particle")
+          .branch(
+            IdParticle()
+              .branch(
+                Pos3D()
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+      )
+      .branch(
         CommandName("playanimation")
           .branch(
             Selector()
@@ -2833,6 +3023,29 @@ def command():
               )
               .finish(EOL)
           )
+      )
+      .branch(
+        CommandName("recipe")
+          .branch(
+            Selector()
+              .branch(
+                Keyword("give")
+                  .note("note.recipe.give")
+                  .branch(
+                    IdRecipe()
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("take")
+                  .note("note.recipe.take")
+                  .branch(
+                    IdRecipe()
+                      .finish(EOL)
+                  )
+              )
+          ),
+        version=version_ge((1, 20, 10))
       )
       .branch(
         CommandName("reload")
@@ -2912,6 +3125,13 @@ def command():
                       .finish(EOL)
                   )
               )
+          )
+      )
+      .branch(
+        CommandName("say")
+          .branch(
+            BareText(empty_ok=True)
+              .finish(EOL)
           )
       )
       .branch(

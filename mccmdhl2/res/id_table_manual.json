@@ -135,5 +135,16 @@
         "minecraft:ender_dragon_event": "Spawn an Ender Dragon on first entry of the End",
         "minecraft:pillager_patrols_event": "Spawn Patrols",
         "minecraft:wandering_trader_event": "Spawn Wandering Traders"
+    },
+    "camera_preset": {
+        "minecraft:first_person": "First Person",
+        "minecraft:third_person": "Third Person Back",
+        "minecraft:third_person_front": "Third Person Front",
+        "minecraft:free": "Camera not bound to player"
+    },
+    "ability": {
+        "mayfly": "Allow player to fly",
+        "worldbuilder": "Give player Worldbuilder",
+        "mute": "Mute the player"
     }
 }

@@ -9,9 +9,12 @@ The files here are:
    official sample data pack.
  - `id_table_manual.json`: The manually written ID table that contains
    IDs that can not be generated. This is merged to `id_table.json`
-   using `--merge` option of `gen_id_table.py`.
+   using `--merge` or `-m` option of `gen_id_table.py`.
  - `translation.json`: The default translation file. See
    `mccmdhl2/translator.py`.
+ - `ease_translation.json`: The translation for easing functions. This
+   is passed to `--ease` or `-y` option of `gen_id_table.py` to
+   generate explanation of easing functions in an ID table.
 
 ## Unsupported IDs in default ID table
 The following IDs are not supported in default ID table so far:

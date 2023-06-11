@@ -134,6 +134,16 @@ argparser.add_argument(
     action=action_input("recipe", vtype="dir")
 )
 argparser.add_argument(
+    "-y", "--ease", metavar="FILE",
+    help="input: easing translation definition",
+    action=action_input("ease")
+)
+argparser.add_argument(
+    "-p", "--particle", metavar="DIR",
+    help="input: a directory of particle definitions",
+    action=action_input("particle", vtype="dir")
+)
+argparser.add_argument(
     "-o", "--out", metavar="PATH",
     help="specify the output path",
     default="./mccmdhl2/res/id_table.json"
@@ -331,29 +341,34 @@ def handle_missing_bs(path: str):
     print("Handled Missing245's block state file %s" % path)
     return IdTable({"block_state": res})
 
-def handle_fog(path: str):
-    res = []
-    for name in os.listdir(path):
-        # Read File
-        spath = os.path.join(path, name)
-        if not os.path.isfile(spath):
-            continue
-        with open(spath, "r") as file:
-            try:
-                definition = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping entity %s" % spath)
+def _id_read(root: str, save_name: str, user_repr: str):
+    # Parse and get (file)/`root`/description/identifier in a directory
+    def _res(path: str):
+        res = []
+        for name in os.listdir(path):
+            # Read File
+            spath = os.path.join(path, name)
+            if not os.path.isfile(spath):
                 continue
-        # Handle JSON
-        try:
-            id_ = definition["minecraft:fog_settings"]["description"] \
-                            ["identifier"]
-        except (KeyError, TypeError):
-            pass
-        else:
-            res.append(id_)
-    print("Handled fog definitions %s" % path)
-    return IdTable({"fog": dict.fromkeys(res)})
+            with open(spath, "r") as file:
+                try:
+                    definition = json_load(file)
+                except json.JSONDecodeError:
+                    print("JSON error, skipping %s %s" % (user_repr, spath))
+                    continue
+            # Handle JSON
+            try:
+                id_ = definition[root]["description"]["identifier"]
+            except (KeyError, TypeError):
+                pass
+            else:
+                res.append(id_)
+        print("Handled %s %s" % (user_repr, path))
+        return IdTable({save_name: dict.fromkeys(res)})
+    return _res
+
+handle_fog = _id_read("minecraft:fog_settings", "fog", "fog")
+handle_particle = _id_read("particle_effect", "particle", "particle")
 
 def handle_biome(path: str):
     with open(path, "r") as file:
@@ -513,6 +528,29 @@ def handle_recipe(path: str):
     print("Handled recipe definitions %s" % path)
     return IdTable({"recipe": dict.fromkeys(all_recipes)})
 
+def handle_ease(path: str):
+    with open(path, "r") as file:
+        try:
+            d = json_load(file)
+        except json.JSONDecodeError:
+            print("JSON error, skipping easing %s" % path)
+            return
+    if not ("range" in d and "func" in d) \
+       or not (isinstance(d["range"], dict), isinstance(d["func"], dict)):
+        print("Object 'range' & 'func' required, skipping easing %s" % path)
+        return
+    res = {"linear": d.get("linear"), "spring": d.get("spring")}
+    for range_ in ("in", "out", "in_out"):
+        for func in ("back", "bounce", "circ", "cubic", "elastic",
+                     "expo", "quad", "quart", "quint", "sine"):
+            res["%s_%s" % (range_, func)] = "".join((
+                d["range"].get(range_),
+                d.get("separator", ", "),
+                d["func"].get(func)
+            ))
+    print("Handled easing %s" % path)
+    return IdTable({"ease_type": res})
+
 TYPE2FUNC = {
     "lang": handle_lang,
     "id_table": handle_json_file,
@@ -527,7 +565,9 @@ TYPE2FUNC = {
     "loot_table": handle_loot,
     "rp_ac": handle_rpac,
     "rp_anim": handle_rp_anim,
-    "recipe": handle_recipe
+    "recipe": handle_recipe,
+    "ease": handle_ease,
+    "particle": handle_particle
 }
 
 tables = []

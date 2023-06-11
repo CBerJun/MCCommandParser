@@ -78,7 +78,7 @@ class Popup:
         # Create widget
         self.toplevel = tkinter.Toplevel(self.text)
         self.toplevel.wm_overrideredirect(True)  # No border
-        self.toplevel.wm_transient(self.text)  # Make it float
+        self.toplevel.wm_transient(self.text)  # type: ignore # Make it float
         self.update_position()
         self.scrollbar = tkinter.Scrollbar(
             self.toplevel, orient=tkinter.VERTICAL)
