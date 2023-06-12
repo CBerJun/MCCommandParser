@@ -57,8 +57,6 @@ def char_rule(char: str):
         return RULEW_FAILED
     return _rule
 
-def version_le(version: "MCVersion") -> "VersionFilter":
-    return lambda v: v <= version
 def version_ge(version: "MCVersion") -> "VersionFilter":
     return lambda v: v >= version
 def version_lt(version: "MCVersion") -> "VersionFilter":
@@ -1304,7 +1302,7 @@ class ScoreSpec(CompressedNode):
     def _tree(self):
         sel = Selector()
         if self.__wildcard:
-            sel = Wildcard(sel)
+            sel = Wildcard(sel, wildcard_note="note._wildcard_score_holder")
         (self
           .branch(
             sel
@@ -1775,6 +1773,58 @@ class Molang(RegexNode):
     def _suggest(self):
         return Word._suggest() + QuotedString._suggest()
 
+class Circle(CompressedNode):
+    def _tree(self):
+        (self
+          .branch(
+            Keyword("circle")
+              .note("note._circle.root")
+              .branch(
+                Pos3D()
+                  .branch(
+                    Integer()
+                      .note("note._circle.radius")
+                      .ranged(min=0)
+                      .branch(self.end)
+                  )
+              )
+          )
+        )
+
+class FacingOrYXRot(CompressedNode):
+    def __init__(self, xrot_optional: Optional[Node] = None,
+                 facing_kwds: dict[str, Any] = {}):
+        self.__xrot_branch = xrot_optional
+        self.__facing_kwds = facing_kwds
+        super().__init__()
+
+    def _tree(self):
+        yrot = Rotation("y")
+        (self
+          .branch(
+            Keyword("facing")
+              .note("note._facing")
+              .branch(
+                Pos3D()
+                  .branch(self.end)
+              )
+              .branch(
+                Selector()
+                  .branch(self.end)
+              ),
+            **self.__facing_kwds
+          )
+          .branch(
+            yrot
+              .branch(
+                Rotation("x")
+                  .branch(self.end)
+              )
+          )
+        )
+        if self.__xrot_branch is not None:
+            yrot.branch(self.__xrot_branch)
+
 class EOL(Finish):
     # End Of Line
     def _parse(self, reader: Reader):
@@ -2124,12 +2174,35 @@ def command():
       .branch(_replaceitem_end)
     )
 
-    _spawnevt_nametag = (Empty()
+    _spawnevt_nametag = (
+      Wildcard(IdEntityEvent(), wildcard_note="note._wildcard_entity_event")
+        .branch(
+          String()
+            .note("note._name_tag")
+            .finish(EOL)
+        )
+        .finish(EOL)
+    )
+
+    _structure_load_end = (Boolean()
+      .note("note.structure.include_entity")
       .branch(
-        Wildcard(IdEntityEvent(), wildcard_note="note._wildcard_entity_event")
+        Boolean()
+          .note("note.structure.include_block")
           .branch(
-            String()
-              .note("note._name_tag")
+            Boolean()
+              .note("note.structure.load.water_logged")
+              .branch(
+                Float()
+                  .note("note.structure.load.integrity")
+                  .ranged(min=0, max=100)
+                  .branch(
+                    String()
+                      .note("note.structure.load.seed")
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
               .finish(EOL)
           )
           .finish(EOL)
@@ -2650,6 +2723,106 @@ def command():
           )
       )
       .branch(
+        CommandName("gametest")
+          .branch(
+            Keyword("runthis")
+              .note("note.gametest.runthis")
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("run")
+              .note("note.gametest.run")
+              .branch(
+                String()
+                  .note("note.gametest.test_name")
+                  .branch(
+                    Boolean()
+                      .note("note.gametest.stop_on_failure")
+                      .branch(
+                        Integer()
+                          .note("note.gametest.repeat")
+                          .ranged(min=1)
+                          .branch(
+                            Integer()
+                              .note("note.gametest.rotation")
+                              .ranged(min=0, max=3)
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                  )
+                  .branch(
+                    Integer()
+                      .note("note.gametest.rotation")
+                      .ranged(min=0, max=3)
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("runthese")
+              .note("note.gametest.runthis")
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("runset")
+              .note("note.gametest.runset.root")
+              .branch(
+                String()
+                  .note("note.gametest.runset.tag")
+                  .branch(
+                    Integer()
+                      .note("note.gametest.rotation")
+                      .ranged(min=0, max=3)
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.gametest.runset.default")
+              )
+          )
+          .branch(
+            Keyword("clearall")
+              .note("note.gametest.clearall")
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("create")
+              .note("note.gametest.create.root")
+              .branch(
+                String()
+                  .note("note.gametest.test_name")
+                  .branch(
+                    Integer()
+                      .note("note.gametest.create.len_x")
+                      .ranged(min=1, max=48)
+                      .branch(
+                        Integer()
+                          .note("note.gametest.create.len_y")
+                          .ranged(min=1, max=48)
+                          .branch(
+                            Integer()
+                              .note("note.gametest.create.len_z")
+                              .ranged(min=1, max=48)
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("pos")
+              .note("note.gametest.pos")
+              .finish(EOL)
+          )
+      )
+      .branch(
         CommandName("give")
           .branch(
             Selector()
@@ -3106,6 +3279,7 @@ def command():
                   .branch(
                     IdEntity()
                       .branch(_spawnevt_nametag)
+                      .finish(EOL)
                   )
               )
               .branch(
@@ -3119,6 +3293,7 @@ def command():
                             note_template="note.ride.ride_modes.%s"
                         )
                           .branch(_spawnevt_nametag)
+                          .finish(EOL)
                       )
                       .finish(EOL)
                   )
@@ -3130,6 +3305,562 @@ def command():
           .branch(
             BareText(empty_ok=True)
               .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("schedule")
+          .branch(
+            Keyword("on_area_loaded")
+              .note("note.area.root")
+              .branch(
+                Keyword("add")
+                  .branch(
+                    Circle()
+                      .branch(
+                        BareText(empty_ok=False)
+                          .note("note.schedule.function")
+                          .finish(EOL)
+                      )
+                  )
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        Pos3D()
+                          .branch(
+                            BareText(empty_ok=False)
+                              .note("note.schedule.function")
+                              .finish(EOL)
+                          )
+                      )
+                  )
+                  .branch(
+                    Keyword("tickingarea")
+                      .note("note.schedule.area.tickingarea.root")
+                      .branch(
+                        String()
+                          .note("note.schedule.area.tickingarea.area")
+                          .branch(
+                            BareText(empty_ok=False)
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+          )
+      )
+      .branch(
+        CommandName("scoreboard")
+          .branch(
+            Keyword("players")
+              .note("note.scoreboard.players.root")
+              .branch(
+                Keyword("set")
+                  .note("note.scoreboard.players.set")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        Integer()
+                          .finish(EOL)
+                      )
+                  )
+              )
+              .branch(
+                Keyword("add")
+                  .note("note.scoreboard.players.add")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        Integer()
+                          .finish(EOL)
+                      )
+                  )
+              )
+              .branch(
+                Keyword("remove")
+                  .note("note.scoreboard.players.remove")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        Integer()
+                          .finish(EOL)
+                      )
+                  )
+              )
+              .branch(
+                Keyword("random")
+                  .note("note.scoreboard.players.random.root")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        Integer()
+                          .note("note.scoreboard.players.random.min")
+                          .branch(
+                            Integer()
+                              .note("note.scoreboard.players.random.max")
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+              .branch(
+                Keyword("reset")
+                  .note("note.scoreboard.players.reset.root")
+                  .branch(
+                    Wildcard(Selector())
+                      .branch(
+                        String()
+                          .font(Font.scoreboard)
+                          .note("note._scoreboard")
+                          .finish(EOL)
+                      )
+                      .branch(
+                        EOL()
+                          .note("note.scoreboard.players.reset.all")
+                      )
+                  )
+              )
+              .branch(
+                Keyword("test")
+                  .note("note.scoreboard.players.test.root")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        Wildcard(
+                          Integer()
+                            .note("note.scoreboard.players.test.min"),
+                          wildcard_note=
+                            "note.scoreboard.players.test.wildcard.min"
+                        )
+                          .branch(
+                            Wildcard(
+                              Integer()
+                                .note("note.scoreboard.players.test.max"),
+                              wildcard_note=
+                                "note.scoreboard.players.test.wildcard.max"
+                            )
+                              .finish(EOL)
+                          )
+                          .branch(
+                            EOL()
+                              .note("note.scoreboard.players.test.no_max")
+                          )
+                      )
+                  )
+              )
+              .branch(
+                Keyword("operation")
+                  .note("note.scoreboard.players.operation.root")
+                  .branch(
+                    ScoreSpec()
+                      .branch(
+                        CharsEnumerate("=", "+=", "-=", "*=", "/=",
+                                       "%=", "><", "<", ">",
+                           note_template="note.scoreboard.players."
+                                         "operation.operators.%s")
+                          .branch(
+                            ScoreSpec()
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+              .branch(
+                Keyword("list")
+                  .note("note.scoreboard.players.list.root")
+                  .branch(
+                    Wildcard(Selector())
+                      .branch(
+                        EOL()
+                          .note("note.scoreboard.players.list.scores")
+                      )
+                  )
+                  .branch(
+                    EOL()
+                      .note("note.scoreboard.players.list.tracking")
+                  )
+              )
+          )
+          .branch(
+            Keyword("objectives")
+              .note("note.scoreboard.objectives.root")
+              .branch(
+                Keyword("add")
+                  .note("note.scoreboard.objectives.add.root")
+                  .branch(
+                    String()
+                      .font(Font.scoreboard)
+                      .note("note._scoreboard")
+                      .branch(
+                        Keyword("dummy")
+                          .branch(
+                            String()
+                              .note("note.scoreboard.objectives.add.display")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                  )
+              )
+              .branch(
+                Keyword("remove")
+                  .note("note.scoreboard.objectives.remove")
+                  .branch(
+                    String()
+                      .font(Font.scoreboard)
+                      .note("note._scoreboard")
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("setdisplay")
+                  .note("note.scoreboard.objectives.setdisplay.root")
+                  .branch(
+                    NotedEnumerate("sidebar", "list",
+                        note_template="note.scoreboard.objectives."
+                                      "setdisplay.slots.%s")
+                      .branch(
+                        String()
+                          .font(Font.scoreboard)
+                          .note("note._scoreboard")
+                          .branch(
+                            NotedEnumerate("ascending", "descending",
+                                note_template="note.scoreboard.objectives."
+                                              "setdisplay.sort.%s")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .branch(
+                        EOL()
+                          .note("note.scoreboard.objectives.setdisplay.clear")
+                      )
+                  )
+                  .branch(
+                    Keyword("belowname")
+                      .note("note.scoreboard.objectives."
+                            "setdisplay.slots.belowname")
+                      .branch(
+                        String()
+                          .font(Font.scoreboard)
+                          .note("note._scoreboard")
+                          .finish(EOL)
+                      )
+                      .branch(
+                        EOL()
+                          .note("note.scoreboard.objectives.setdisplay.clear")
+                      )
+                  )
+              )
+              .branch(
+                Keyword("list")
+                  .note("note.scoreboard.objectives.list")
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("script")
+          .branch(
+            Keyword("debugger")
+              .note("note.script.debugger.root")
+              .branch(
+                Keyword("close")
+                  .note("note.script.debugger.close")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("connect")
+                  .note("note.script.debugger.connect")
+                  .branch(
+                    String()
+                      .note("note.script.debugger.host")
+                      .branch(
+                        Integer()
+                          .ranged(min=0, max=65535)
+                          .note("note.script.debugger.port")
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("listen")
+                  .note("note.script.debugger.listen")
+                  .branch(
+                    Integer()
+                      .ranged(min=0, max=65535)
+                      .note("note.script.debugger.port")
+                      .finish(EOL)
+                  )
+              )
+          )
+          .branch(
+            Keyword("profiler")
+              .note("note.script.profiler.root")
+              .branch(
+                Keyword("start")
+                  .note("note.script.profiler.start")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("stop")
+                  .note("note.script.profiler.stop")
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("watchdog")
+              .note("note.script.watchdog.root")
+              .branch(
+                Keyword("exportstats")
+                  .note("note.script.watchdog.exportstats")
+                  .finish(EOL)
+              ),
+            version=version_ge((1, 19, 30))
+          )
+      )
+      .branch(
+        CommandName("scriptevent")
+          .branch(
+            String()
+              .note("note.scriptevent.id")
+              .branch(
+                BareText(empty_ok=True)
+                  .note("note.scriptevent.message")
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("setblock")
+          .branch(
+            Pos3D()
+              .branch(
+                BlockSpec(bs_optional=EOL())
+                  .branch(
+                    NotedEnumerate("destroy", "keep", "replace",
+                                   note_template="note.setblock.modes.%s")
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("setmaxplayers")
+          .branch(
+            Integer()
+              .note("note.setmaxplayers.value")
+              .ranged(min=1)
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("setworldspawn")
+          .branch(
+            Pos3D()
+              .finish(EOL)
+          )
+          .branch(
+            EOL()
+              .note("note.setworldspawn.here")
+          )
+      )
+      .branch(
+        CommandName("spawnpoint")
+          .branch(
+            Selector()
+              .branch(
+                Pos3D()
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.spawnpoint.here")
+              )
+          )
+          .finish(EOL)
+      )
+      .branch(
+        CommandName("spreadplayers")
+          .branch(
+            Pos("x")
+              .branch(
+                Pos("z")
+                  .branch(
+                    Float()
+                      .note("note.spreadplayers.distance")
+                      .ranged(min=0)
+                      .branch(
+                        Float()
+                          .note("note.spreadplayers.max_range")
+                          .ranged(min=1)
+                          .branch(
+                            Selector()
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+          )
+      )
+      .branch(
+        CommandName("stopsound")
+          .branch(
+            Selector()
+              .branch(
+                IdSound()
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("structure")
+          .branch(
+            Keyword("save")
+              .note("note.structure.save.root")
+              .branch(
+                String()
+                  .note("note.structure.name")
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        Pos3D()
+                          .branch(
+                            Boolean()
+                              .note("note.structure.include_entity")
+                              .branch(
+                                NotedEnumerate("disk", "memory",
+                                    note_template="note.structure.save."
+                                                  "modes.%s")
+                                  .branch(
+                                    Boolean()
+                                      .note("note.structure.include_block")
+                                      .finish(EOL)
+                                  )
+                                  .finish(EOL)
+                              )
+                              .finish(EOL)
+                          )
+                          .branch(
+                            NotedEnumerate("disk", "memory",
+                                note_template="note.structure.save.modes.%s")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                  )
+              )
+          )
+          .branch(
+            Keyword("load")
+              .note("note.structure.load.root")
+              .branch(
+                String()
+                  .note("note.structure.name")
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        NotedEnumerate("0_degrees", "90_degrees",
+                                       "180_degrees", "270_degrees",
+                            note_template="note.structure.load.rotations.%s")
+                          .branch(
+                            NotedEnumerate("x", "z", "xz", "none",
+                                note_template="note.structure.load.flip.%s")
+                              .branch(_structure_load_end)
+                              .branch(
+                                NotedEnumerate("block_by_block",
+                                               "layer_by_layer",
+                                    note_template="note.structure.load."
+                                                  "anims.%s")
+                                  .branch(
+                                    Float()
+                                      .note("note.structure.load.anim_sec")
+                                      .ranged(min=0)
+                                      .branch(_structure_load_end)
+                                      .finish(EOL)
+                                  )
+                                  .finish(EOL)
+                              )
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+              )
+          )
+          .branch(
+            Keyword("delete")
+              .note("note.structure.delete")
+              .branch(
+                String()
+                  .note("note.structure.name")
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("summon")
+          .branch(
+            IdEntity()
+              .branch(
+                Pos3D()
+                  .branch(
+                    FacingOrYXRot(
+                        xrot_optional=EOL(),
+                        facing_kwds={"version": version_ge((1, 19, 80))}
+                    )
+                      .branch(_spawnevt_nametag)
+                      .finish(EOL),
+                    version=version_ge((1, 19, 70))
+                  )
+                  .branch(_spawnevt_nametag, version=version_lt((1, 19, 70)))
+                  .finish(EOL)
+              )
+              .branch(
+                String()
+                  .note("note._name_tag")
+                  .branch(
+                    Pos3D()
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("tag")
+          .branch(
+            Wildcard(Selector(), wildcard_note="note.tag.wildcard_target")
+              .branch(
+                Keyword("add")
+                  .note("note.tag.add")
+                  .branch(
+                    String()
+                      .note("note.tag.tag")
+                      .font(Font.tag)
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("remove")
+                  .note("note.tag.remove")
+                  .branch(
+                    String()
+                      .note("note.tag.tag")
+                      .font(Font.tag)
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("list")
+                  .note("note.tag.list")
+                  .finish(EOL)
+              )
           )
       )
       .branch(

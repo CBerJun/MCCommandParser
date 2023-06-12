@@ -31,7 +31,7 @@ tree = (Keyword("foo")  # A literal word "foo"
       .branch(Boolean()
         .finish(EOL)  # End of line
       )
-      .branch(Char("L")  # A character "L"
+      .branch(Keyword("L")
         .branch(Selector()
           .finish(EOL)
         ),

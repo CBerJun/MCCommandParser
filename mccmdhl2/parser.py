@@ -272,7 +272,7 @@ class Node(Generic[_PT]):
         while True:
             try:
                 # Content between `self` and child
-                if prev_node:
+                if prev_node:  # root node does not need this
                     if ((prev_node.argument_end and not is_close)
                         or is_arg_end):
                         try:

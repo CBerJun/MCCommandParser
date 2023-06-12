@@ -201,10 +201,11 @@ class Popup:
 
     def _focus_back(self):
         """Give back focus to `Text`, without hiding pop-up window."""
-        assert self.toplevel
         self.text.focus_set()
         # Giving back focus to `Text` will trigger `<FocusOut>` for
         # the toplevel, so we unbind this event temporarily.
+        if not self.toplevel:
+            return
         self.toplevel.unbind(self.POPUP_HIDE_EVENT, self.id_hidep)
         self.toplevel.update()  # Trigger event immediately
         self.id_hidep = self.toplevel.bind(

@@ -134,6 +134,12 @@
         },
         "_name_tag": "Entity name tag",
         "_wildcard_entity_event": "No entity event",
+        "_wildcard_score_holder": "All score holders tracked",
+        "_circle": {
+            "root": "Specify a circle area using center position and radius",
+            "radius": "Radius (blocks)"
+        },
+        "_facing": "Facing an entity or position",
         "_json": {
             "_suggested": "*Recommended JSON*",
             "_libs": {
@@ -378,7 +384,7 @@
                     "root": "Replace only a certain type of block or all blocks",
                     "all": "Replace all blocks"
                 },
-                "destroy": "Break the block as if a player dig it (drop item, play animation)",
+                "destroy": "Break original block as if a player digs it (drop item, play animation)",
                 "hollow": "Create a hollow cuboid, replace inside with air blocks",
                 "keep": "Replace only air blocks",
                 "outline": "Create a hollow cuboid, leave inside the original blocks"
@@ -404,6 +410,29 @@
             "root": "Manage game rules",
             "query": "Inquire about current state of the rule",
             "value": "Modify value of the rule"
+        },
+        "gametest": {
+            "root": "Manage GameTest tests",
+            "runthis": "Run test in Strcuture Block within 15 blocks radius",
+            "run": "Create and run a test specified by ID",
+            "test_name": "Test ID <class name>:<test name>",
+            "stop_on_failure": "Whether to stop next repetition when current test fails",
+            "repeat": "Times to repeat the test",
+            "rotation": "Rotate structure by <value> * 90 degrees clockwise",
+            "runthese": "Run test in Strcuture Block within 200 blocks radius",
+            "runset": {
+                "root": "Create and run all tests in a class",
+                "tag": "Class name",
+                "default": "Run all tests in class \"suite:default\""
+            },
+            "clearall": "Clear all tests",
+            "create": {
+                "root": "Create the test -- place Structure Block and generate a default structure",
+                "len_x": "X length of structure",
+                "len_y": "Y length of structure",
+                "len_z": "Z length of structure"
+            },
+            "pos": "Find nearest Structure Block within 200 blocks radius"
         },
         "give": {
             "root": "Give players items",
@@ -549,6 +578,187 @@
         "say": {
             "root": "Send all players a message"
         },
+        "schedule": {
+            "root": "Schedule a function to be executed later",
+            "area": {
+                "root": "Execute a function when an area is loaded",
+                "tickingarea": {
+                    "root": "Execute the function when a tickingarea is added",
+                    "area": "Tickingarea name"
+                }
+            },
+            "function": "Path of function to run"
+        },
+        "scoreboard": {
+            "root": "Interact with scoreboard system",
+            "players": {
+                "root": "Manage scores of a score holder",
+                "set": "Set a score to a specified value",
+                "add": "Increase a score",
+                "remove": "Decrease a score",
+                "random": {
+                    "root": "Randomize a score",
+                    "min": "Min of random value (inclusive)",
+                    "max": "Max of random value (inclusive)"
+                },
+                "reset": {
+                    "root": "Untrack a score of a score holder",
+                    "all": "Reset scores on all objectives for this target"
+                },
+                "test": {
+                    "root": "Test whether a score is in a specified range",
+                    "min": "Min value of range (inclusive)",
+                    "max": "Max value of range (inclusive)",
+                    "wildcard": {
+                        "min": "Negative infinity for int32 (-2147483648)",
+                        "max": "Positive infinity for int32 (2147483647)"
+                    },
+                    "no_max": "Test whether score >= given value"
+                },
+                "operation": {
+                    "root": "Math operations on scores",
+                    "operators": {
+                        "=": "Set A to B",
+                        "+=": "Set A to A+B",
+                        "-=": "Set A to A-B",
+                        "*=": "Set A to A*B",
+                        "/=": "Set A to A/B",
+                        "%=": "Set A to A mod B",
+                        "><": "Swap values of A and B",
+                        "<": "Set A to min of A and B",
+                        ">": "Set A to max of A and B"
+                    }
+                },
+                "list": {
+                    "root": "List all score holders / all data of specified score holders",
+                    "tracking": "List all the tracking score holders in system",
+                    "scores": "List scores of all objectives for the specified score holder"
+                }
+            },
+            "objectives": {
+                "root": "Manage objectives",
+                "add": {
+                    "root": "Add an objective",
+                    "display": "Set display name of objective"
+                },
+                "remove": "Remove an objective",
+                "setdisplay": {
+                    "root": "Displaying objectives to players",
+                    "slots": {
+                        "sidebar": "On the right of screen",
+                        "list": "On pause menu",
+                        "belowname": "Below players' name tag"
+                    },
+                    "sort": {
+                        "ascending": "Ascending order",
+                        "descending": "Descending order"
+                    },
+                    "clear": "Clear this display area"
+                },
+                "list": "List all the objectives in system"
+            }
+        },
+        "script": {
+            "root": "Interact with GameTest debugger",
+            "debugger": {
+                "root": "Debugger",
+                "close": "Close debugger",
+                "connect": "Connect to a debugger",
+                "listen": "Listen to a debugger",
+                "host": "Host of debugger",
+                "port": "Port on host"
+            },
+            "profiler": {
+                "root": "Profiler",
+                "start": "Start profiler",
+                "stop": "Stop profiler"
+            },
+            "watchdog": {
+                "root": "Watchdog",
+                "exportstats": "Export Watchdog statistics"
+            }
+        },
+        "scriptevent": {
+            "root": "Trigger GameTest script event",
+            "id": "Event ID (namespace required)",
+            "message": "Message"
+        },
+        "setblock": {
+            "root": "Place a block at specified position",
+            "modes": {
+                "destroy": "Break original block as if a player digs it (drop item, play animation)",
+                "keep": "Replace only air blocks",
+                "replace": "Replace the original block anyway"
+            }
+        },
+        "setmaxplayers": {
+            "root": "Set max players allowed in the world",
+            "value": "New max players number"
+        },
+        "setworldspawn": {
+            "root": "Set the world spawn point",
+            "here": "Use command execution point as world spawn"
+        },
+        "spawnpoint": {
+            "root": "Set players' spawn point",
+            "here": "Use command execution point as spawn point"
+        },
+        "spreadplayers": {
+            "root": "Spread entities to different location within an area",
+            "distance": "Min distance between any 2 victims",
+            "max_range": "Half the length of side of the square spreading area"
+        },
+        "stopsound": {
+            "root": "Stop playing sound for players"
+        },
+        "structure": {
+            "root": "Interact with structure system",
+            "include_entity": "Include entities or not",
+            "include_block": "Include blocks or not",
+            "name": "Structure name",
+            "save": {
+                "root": "Save a structure",
+                "modes": {
+                    "disk": "Save in disk",
+                    "memory": "Save in memory (vanish when leaving world)"
+                }
+            },
+            "load": {
+                "root": "Load a structure",
+                "rotations": {
+                    "0_degrees": "No rotation",
+                    "90_degrees": "90 degrees clockwise rotation",
+                    "180_degrees": "180 degrees rotation",
+                    "270_degrees": "90 degrees counterclockwise rotation"
+                },
+                "flip": {
+                    "none": "No flipping",
+                    "x": "Flip structure on X axis",
+                    "z": "Flip structure on Z axis",
+                    "xz": "Flip structure on X and Z axis"
+                },
+                "anims": {
+                    "block_by_block": "Play a block-by-block building animation",
+                    "layer_by_layer": "Play a layer-by-layer building animation"
+                },
+                "anim_sec": "Duration of animation (seconds)",
+                "water_logged": "Whether to waterlog blocks loaded in water or not",
+                "integrity": "Chance a block to be loaded (0~100)",
+                "seed": "Seed of random algorithm that decides whether a block is placed according to integrity"
+            },
+            "delete": "Delete a structure"
+        },
+        "summon": {
+            "root": "Summon an entity"
+        },
+        "tag": {
+            "root": "Manage entity tags",
+            "tag": "Entity tag",
+            "wildcard_target": "All entities tracking in system",
+            "add": "Give entities a tag",
+            "remove": "Remove a tag from entities",
+            "list": "List the tags entities have"
+        },
         "tellraw": {
             "root": "Send specified players a message using rawtext"
         }
@@ -572,7 +782,8 @@
                 "bool": "a boolean (true/false)",
                 "chars": "{chars!r}",
                 "swizzle": "combination of x, y and z",
-                "bare_text": "any text"
+                "bare_text": "any text",
+                "json": "a JSON expression"
             },
             "unclosed_str": "Unclosed string",
             "too_many_args": "Too many arguments",
