@@ -244,11 +244,16 @@ class AutoCompleter:
             for suggest, is_close, is_arg_end in unit.info:
                 for sugg in _expand(suggest()):
                     if (unit.argument_end or is_arg_end):
-                        if self.reader.is_terminating_char(sugg.writes[0]):
+                        if (self.reader.is_terminating_char(sugg.writes[0])
+                            or is_close):
+                            # OK if next argument starts with
+                            # terminating char or is a close branch
                             res1.append(sugg)
                         else:
                             have_hidden_sugg = True
                     else:
+                        # OK if the node does not require argument
+                        # end before next argument.
                         res1.append(sugg)
             if have_hidden_sugg:
                 res1.insert(0, Suggestion(

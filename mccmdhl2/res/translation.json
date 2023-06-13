@@ -140,6 +140,11 @@
             "radius": "Radius (blocks)"
         },
         "_facing": "Facing an entity or position",
+        "_blocks_scan_mode": {
+            "all": "All blocks included",
+            "masked": "Air not included"
+        },
+        "_tickingarea": "Ticking area name",
         "_json": {
             "_suggested": "*Recommended JSON*",
             "_libs": {
@@ -342,13 +347,7 @@
             },
             "tests": {
                 "block": "Type of a block",
-                "blocks": {
-                    "root": "Compare two areas",
-                    "modes": {
-                        "all": "All blocks included",
-                        "masked": "Air not included"
-                    }
-                },
+                "blocks": "Compare two areas",
                 "entity": "Whether an entity exists",
                 "score": {
                     "root": "Scores on scoreboard",
@@ -582,10 +581,7 @@
             "root": "Schedule a function to be executed later",
             "area": {
                 "root": "Execute a function when an area is loaded",
-                "tickingarea": {
-                    "root": "Execute the function when a tickingarea is added",
-                    "area": "Tickingarea name"
-                }
+                "tickingarea": "Execute the function when a tickingarea is added"
             },
             "function": "Path of function to run"
         },
@@ -759,8 +755,118 @@
             "remove": "Remove a tag from entities",
             "list": "List the tags entities have"
         },
+        "teleport": {
+            "root": "Teleport entities and/or change their rotation",
+            "to_entity": "Teleport Entity 1 to Entity 2",
+            "self2entity": "Teleport executer to given entity",
+            "check_for_blocks": "Whether to only teleport when target would not collide with a block it cannot be inside"
+        },
         "tellraw": {
             "root": "Send specified players a message using rawtext"
+        },
+        "testfor": {
+            "root": "Test if entity that matches given conditions exists"
+        },
+        "testforblock": {
+            "root": "Test if a block at specified position matches given block type"
+        },
+        "testforblocks": {
+            "root": "Test if two areas of blocks match"
+        },
+        "tickingarea": {
+            "root": "Manage ticking areas",
+            "set_preload": "Mark/Unmark the area as preload (load first)",
+            "add": "Add a ticking area",
+            "remove": "Remove a ticking area",
+            "remove_all": "Remove all ticking areas",
+            "list": {
+                "root": "List currently defined ticking areas",
+                "cur_dim": "List areas in current dimension only",
+                "all_dims": "List areas in all dimensions"
+            },
+            "preload": {
+                "root": "Manage preload states of areas",
+                "query": "Inquire about whether the area is marked as preload"
+            }
+        },
+        "time": {
+            "root": "Interact with time system",
+            "amount": "Amount (game ticks)",
+            "add": "Add internal time",
+            "query": {
+                "root": "Inquire about several time statistics",
+                "types": {
+                    "daytime": "Ticks passed since last dawn (internal time / 24000)",
+                    "gametime": "Age of the world in ticks",
+                    "day": "Number of game days (24000 ticks) passed"
+                }
+            },
+            "set": {
+                "root": "Directly modify internal time",
+                "alias": {
+                    "day": "Daytime (1000)",
+                    "night": "Night (13000)",
+                    "noon": "Noon (6000)",
+                    "midnight": "Midnight (18000)",
+                    "sunrise": "Sun rise (23000)",
+                    "sunset": "Sun set (12000)"
+                }
+            }
+        },
+        "title": {
+            "root": "Manage screen titles",
+            "title": "Display in the middle of screen",
+            "subtitle": "Display below title (only available when title exists)",
+            "actionbar": "Display above hotbar",
+            "clear": "Clear screen titles",
+            "times": {
+                "root": "Change title fade-in, stay and fade-out times",
+                "fade_in": "Fade in time (game ticks)",
+                "hold": "Stay time (game ticks)",
+                "fade_out": "Fade out time (game ticks)"
+            },
+            "reset": "Reset times settings to 10, 70, 20"
+        },
+        "titleraw": {
+            "root": "Manage screen titles using rawtext"
+        },
+        "toggledownfall": {
+            "root": "Toggle weather (clear -> rain/snow, other -> clear)"
+        },
+        "volumearea": {
+            "root": "Manage volume areas",
+            "name": "Volume area name",
+            "add": {
+                "root": "Add a volume area",
+                "id": "Volume area identifier"
+            },
+            "remove": "Remove a volume area",
+            "remove_all": "Remove all volume areas",
+            "list": {
+                "root": "List currently defined volume areas",
+                "cur_dim": "List areas in current dimension only",
+                "all_dims": "List areas in all dimensions"
+            }
+        },
+        "worldbuilder": {
+            "root": "Toggle World Builder permission for executer"
+        },
+        "weather": {
+            "root": "Manage weather",
+            "set": {
+                "duration": "Duration of current weather (game ticks)",
+                "weathers": {
+                    "clear": "Sunny day",
+                    "rain": "Rainy day",
+                    "thunder": "Thunderstorm"
+                }
+            },
+            "query": "Inquire about weather"
+        },
+        "xp": {
+            "root": "Add/Remove players' experience point/level",
+            "level": "In levels",
+            "amount": "Amount to add"
         }
     },
     "error": {

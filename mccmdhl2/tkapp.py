@@ -68,18 +68,17 @@ class Popup:
         self.suggestions: List["HandledSuggestion"] = []
         # and its length (update with it)
         self.SUGG_LEN = 0
-        # See `self.update`:
-        self.is_updating = False
 
     def create(self):
-        """Create the pop-up window."""
+        """Create the pop-up window, without positioning it to the
+        correct place.
+        """
         if self.toplevel is not None:
             return
         # Create widget
         self.toplevel = tkinter.Toplevel(self.text)
         self.toplevel.wm_overrideredirect(True)  # No border
         self.toplevel.wm_transient(self.text)  # type: ignore # Make it float
-        self.update_position()
         self.scrollbar = tkinter.Scrollbar(
             self.toplevel, orient=tkinter.VERTICAL)
         self.listbox = tkinter.Listbox(self.toplevel,
@@ -158,13 +157,11 @@ class Popup:
         self.scrollbar = self.listbox = self.label = self.toplevel = None
         self.text.focus_set()  # Re-focus on `Text`
 
-    def update(self,
+    def update_content(self,
                suggestions: List["HandledSuggestion"],
                error: str = ""):
         """Show the pop-up & update content on it."""
-        if self.toplevel:
-            self.update_position()
-        else:
+        if not self.toplevel:
             self.create()
         assert self.toplevel
         assert self.listbox
@@ -181,6 +178,15 @@ class Popup:
         if len(error) >= self.ERRMSG_MAX_LENGTH:
             error = error[:self.ERRMSG_MAX_LENGTH-3] + "..."
         self.label.config(text=error)
+        # Update position
+        # We update position after the listbox and label are updated
+        # because positioning needs correct toplevel size, if we
+        # update position first the window size will be the wrong one
+        # (the old one when last time we update the content).
+        # Also `.update` toplevel to make sure we get its correct
+        # size info.
+        self.toplevel.update()
+        self.update_position()
 
     def complete(self) -> bool:
         """Use the user selected completion.
@@ -310,8 +316,6 @@ class MCCmdText(tkinter.Text):
     """A Tkinter `Text` widget where you can input Minecraft commands
     and get error messages, auto-completion and highlighting.
     """
-    HINT_LINE_TOO_LONG = "Line is too long for parsing"
-
     ERROR_TKTAG = "mccmdhl2E"
     FONT_TKTAG_PREFIX = "mccmdhl2F"
 
@@ -463,7 +467,7 @@ class MCCmdText(tkinter.Text):
             error_message = self.parser.translator.get("tkapp.no_error")
         # Update pop-up
         if popup:
-            self.popup.update(
+            self.popup.update_content(
                 suggestions=self.parser.suggest(cursor_line, cursor_column),
                 error=error_message
             )

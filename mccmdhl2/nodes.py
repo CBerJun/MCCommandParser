@@ -1773,7 +1773,7 @@ class Molang(RegexNode):
     def _suggest(self):
         return Word._suggest() + QuotedString._suggest()
 
-class Circle(CompressedNode):
+class CircleOrArea(CompressedNode):
     def _tree(self):
         (self
           .branch(
@@ -1787,6 +1787,13 @@ class Circle(CompressedNode):
                       .ranged(min=0)
                       .branch(self.end)
                   )
+              )
+          )
+          .branch(
+            Pos3D()
+              .branch(
+                Pos3D()
+                  .branch(self.end)
               )
           )
         )
@@ -1961,12 +1968,12 @@ def command():
       )
       .branch(
         Keyword("blocks")
-          .note("note.execute.tests.blocks.root")
+          .note("note.execute.tests.blocks")
           .branch(
             Pos3D().branch(Pos3D().branch(Pos3D()
               .branch(
                 NotedEnumerate("all", "masked",
-                    note_template="note.execute.tests.blocks.modes.%s")
+                    note_template="note._blocks_scan_mode.%s")
                   .branch(_execute)
                   .finish(EOL)
               )
@@ -2205,6 +2212,85 @@ def command():
               )
               .finish(EOL)
           )
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
+
+    _tp_pos_end = (Boolean()
+      .note("note.teleport.check_for_blocks")
+      .finish(EOL)
+    )
+    _tp_pos = (Pos3D()
+      .branch(
+        FacingOrYXRot(xrot_optional=EOL())
+          .branch(_tp_pos_end)
+          .finish(EOL)
+      )
+      .branch(_tp_pos_end)
+      .finish(EOL)
+    )
+
+    _tickingarea_preload_end = (Empty()
+      .branch(
+        Boolean()
+          .note("note.tickingarea.set_preload")
+          .finish(EOL)
+      )
+      .branch(
+        EOL()
+          .note("note.tickingarea.preload.query")
+      )
+    )
+
+    def _title_command(name: str, text_node: Node):
+        return (CommandName(name)
+          .branch(
+            Selector()
+              .branch(
+                NotedEnumerate("title", "subtitle", "actionbar",
+                    note_template="note.title.%s")
+                  .branch(
+                    text_node
+                      .finish(EOL)
+                  )
+              )
+              .branch(
+                Keyword("clear")
+                  .note("note.title.clear")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("times")
+                  .note("note.title.times.root")
+                  .branch(
+                    Integer()
+                      .note("note.title.times.fade_in")
+                      .ranged(min=0)
+                      .branch(
+                        Integer()
+                          .note("note.title.times.hold")
+                          .ranged(min=0)
+                          .branch(
+                            Integer()
+                              .note("note.title.times.fade_out")
+                              .ranged(min=0)
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+              .branch(
+                Keyword("reset")
+                  .note("note.title.reset")
+                  .finish(EOL)
+              )
+          )
+        )
+
+    _xp_end = (Empty()
+      .branch(
+        Selector()
           .finish(EOL)
       )
       .finish(EOL)
@@ -3315,7 +3401,7 @@ def command():
               .branch(
                 Keyword("add")
                   .branch(
-                    Circle()
+                    CircleOrArea()
                       .branch(
                         BareText(empty_ok=False)
                           .note("note.schedule.function")
@@ -3323,24 +3409,14 @@ def command():
                       )
                   )
                   .branch(
-                    Pos3D()
+                    Keyword("tickingarea")
+                      .note("note.schedule.area.tickingarea")
                       .branch(
-                        Pos3D()
+                        String()
+                          .note("note._tickingarea")
                           .branch(
                             BareText(empty_ok=False)
                               .note("note.schedule.function")
-                              .finish(EOL)
-                          )
-                      )
-                  )
-                  .branch(
-                    Keyword("tickingarea")
-                      .note("note.schedule.area.tickingarea.root")
-                      .branch(
-                        String()
-                          .note("note.schedule.area.tickingarea.area")
-                          .branch(
-                            BareText(empty_ok=False)
                               .finish(EOL)
                           )
                       )
@@ -3864,6 +3940,33 @@ def command():
           )
       )
       .branch(
+        CommandName("teleport", "tp")
+          .branch(
+            Selector()
+              .branch(_tp_pos)
+              .branch(
+                Selector()
+                  .branch(
+                    Boolean()
+                      .note("note.teleport.check_for_blocks")
+                      .branch(
+                        EOL()
+                          .note("note.teleport.to_entity")
+                      )
+                  )
+                  .branch(
+                    EOL()
+                      .note("note.teleport.to_entity")
+                  )
+              )
+              .branch(
+                EOL()
+                  .note("note.teleport.self2entity")
+              )
+          )
+          .branch(_tp_pos)
+      )
+      .branch(
         CommandName("tellraw")
           .branch(
             Selector()
@@ -3871,6 +3974,234 @@ def command():
                 RawText()
                   .finish(EOL)
               )
+          )
+      )
+      .branch(
+        CommandName("testfor")
+          .branch(
+            Selector()
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("testforblock")
+          .branch(
+            Pos3D()
+              .branch(
+                BlockSpec(bs_optional=EOL())
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(
+        CommandName("testforblocks")
+          .branch(
+            Pos3D().branch(Pos3D().branch(Pos3D()
+              .branch(
+                NotedEnumerate("all", "masked",
+                    note_template="note._blocks_scan_mode.%s")
+                  .finish(EOL)
+              )
+              .finish(EOL)
+            ))
+          )
+      )
+      .branch(
+        CommandName("tickingarea")
+          .branch(
+            Keyword("add")
+              .note("note.tickingarea.add")
+              .branch(
+                CircleOrArea()
+                  .branch(
+                    String()
+                      .note("note._tickingarea")
+                      .branch(
+                        Boolean()
+                          .note("note.tickingarea.set_preload")
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("remove")
+              .note("note.tickingarea.remove")
+              .branch(
+                Pos3D()
+                  .finish(EOL)
+              )
+              .branch(
+                String()
+                  .note("note._tickingarea")
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("remove_all")
+              .note("note.tickingarea.remove_all")
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("list")
+              .note("note.tickingarea.list.root")
+              .branch(
+                Keyword("all-dimensions")
+                  .note("note.tickingarea.list.all_dims")
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.tickingarea.list.cur_dim")
+              )
+          )
+          .branch(
+            Keyword("preload")
+              .note("note.tickingarea.preload.root")
+              .branch(
+                Pos3D()
+                  .branch(_tickingarea_preload_end)
+              )
+              .branch(
+                String()
+                  .note("note._tickingarea")
+                  .branch(_tickingarea_preload_end)
+              )
+          )
+      )
+      .branch(
+        CommandName("time")
+          .branch(
+            Keyword("add")
+              .note("note.time.add")
+              .branch(
+                Integer()
+                  .note("note.time.amount")
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("query")
+              .note("note.time.query.root")
+              .branch(
+                NotedEnumerate("daytime", "gametime", "day",
+                    note_template="note.time.query.types.%s")
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("set")
+              .note("note.time.set.root")
+              .branch(
+                Integer()
+                  .note("note.time.amount")
+                  .finish(EOL)
+              )
+              .branch(
+                NotedEnumerate("day", "night", "noon", "midnight",
+                               "sunrise", "sunset",
+                    note_template="note.time.set.alias.%s")
+                  .finish(EOL)
+              )
+          )
+      )
+      .branch(_title_command("title", BareText(empty_ok=True)))
+      .branch(_title_command("titleraw", RawText()))
+      .branch(
+        CommandName("toggledownfall")
+          .finish(EOL)
+      )
+      .branch(
+        CommandName("volumearea")
+          .branch(
+            Keyword("add")
+              .note("note.volumearea.add.root")
+              .branch(
+                String()
+                  .note("note.volumearea.add.id")
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        Pos3D()
+                          .branch(
+                            String()
+                              .note("note.volumearea.name")
+                              .finish(EOL)
+                          )
+                      )
+                  )
+              )
+          )
+          .branch(
+            Keyword("remove")
+              .note("note.volumearea.remove")
+              .branch(
+                Pos3D()
+                  .finish(EOL)
+              )
+              .branch(
+                String()
+                  .note("note.volumearea.name")
+                  .finish(EOL)
+              )
+          )
+          .branch(
+            Keyword("remove_all")
+              .note("note.volumearea.remove_all")
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("list")
+              .note("note.volumearea.list.root")
+              .branch(
+                Keyword("all-dimensions")
+                  .note("note.volumearea.list.all_dims")
+                  .finish(EOL)
+              )
+              .branch(
+                EOL()
+                  .note("note.volumearea.list.cur_dim")
+              )
+          )
+      )
+      .branch(
+        CommandName("worldbuilder", "wb")
+          .finish(EOL)
+      )
+      .branch(
+        CommandName("weather")
+          .branch(
+            NotedEnumerate("clear", "rain", "thunder",
+                note_template="note.weather.set.weathers.%s")
+              .branch(
+                Integer()
+                  .note("note.weather.set.duration")
+                  .ranged(min=0, max=1000000)
+                  .finish(EOL)
+              )
+              .finish(EOL)
+          )
+          .branch(
+            Keyword("query")
+              .note("note.weather.query")
+              .finish(EOL)
+          )
+      )
+      .branch(
+        CommandName("xp")
+          .branch(
+            Integer()
+              .note("note.xp.amount")
+              .branch(
+                KeywordCaseInsensitive("l")
+                  .note("note.xp.level")
+                  .font(Font.meta)
+                  .branch(_xp_end),
+                is_close=True
+              )
+              .branch(_xp_end)
           )
       )
     )
@@ -3881,6 +4212,10 @@ def mcfuncline():
         command()
       )
       .branch(
+        EOL()
+          .note("note._empty_line")
+      )
+      .branch(
         Char("#")
           .font(Font.comment)
           .note("note._comment")
@@ -3889,9 +4224,5 @@ def mcfuncline():
               .font(Font.comment)
               .finish(EOL)
           )
-      )
-      .branch(
-        EOL()
-          .note("note._empty_line")
       )
     )
