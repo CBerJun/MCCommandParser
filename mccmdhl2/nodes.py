@@ -3314,16 +3314,22 @@ def command():
             Keyword("entity")
               .note("note.replaceitem.entity")
               .branch(
-                EntitySlot()
-                  .branch(_replaceitem)
+                Selector()
+                  .branch(
+                    EntitySlot()
+                      .branch(_replaceitem)
+                  )
               )
           )
           .branch(
             Keyword("block")
               .note("note.replaceitem.block")
               .branch(
-                BlockSlot()
-                  .branch(_replaceitem)
+                Pos3D()
+                  .branch(
+                    BlockSlot()
+                      .branch(_replaceitem)
+                  )
               )
           )
       )
