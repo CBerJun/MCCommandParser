@@ -932,8 +932,9 @@ class YawPitch(CompressedNode):
         )
 
 class GameMode(CompressedNode):
-    def __init__(self, allow_5: bool):
+    def __init__(self, allow_5: bool, allow_legacy_6=False):
         self.allow_5 = allow_5
+        self.allow_legacy_6 = allow_legacy_6
         super().__init__()
 
     def _note_table(self) -> Dict[str, str]:
@@ -954,6 +955,10 @@ class GameMode(CompressedNode):
         return res
 
     def _tree(self):
+        int_ids = self._allow_ids()
+        legacy_ids = int_ids.copy()
+        if self.allow_legacy_6:
+            legacy_ids.append(6)
         (self
           .branch(
             Enumerate("spectator", "adventure", "survival", "creative",
@@ -963,10 +968,19 @@ class GameMode(CompressedNode):
           )
           .branch(
             Integer()
-              .one_of(*self._allow_ids())
+              .one_of(*int_ids)
               .font(Font.keyword)
               .note("note._gamemode._number")
-              .branch(self.end)
+              .branch(self.end),
+            version=version_ge((1, 19, 30))
+          )
+          .branch(
+            Integer()
+              .one_of(*legacy_ids)
+              .font(Font.keyword)
+              .note("note._gamemode._number")
+              .branch(self.end),
+            version=version_lt((1, 19, 30))
           )
         )
 
@@ -2778,7 +2792,7 @@ def command():
       .branch(
         CommandName("gamemode")
           .branch(
-            GameMode(allow_5=True)
+            GameMode(allow_5=True, allow_legacy_6=True)
               .branch(_optional_selector_end)
           )
       )
