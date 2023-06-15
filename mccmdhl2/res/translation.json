@@ -894,7 +894,8 @@
             "unclosed_str": "Unclosed string",
             "too_many_args": "Too many arguments",
             "id_invalid": "Invalid character {char!r} in namespaced ID",
-            "json_str_u_escape": "Expecting 4 hex digits after \\u"
+            "json_str_u_escape": "Expecting 4 hex digits after \\u",
+            "illegal_word": "Illegal word, try add quotes if possible"
         },
         "semantic": {
             "_root": "{ln1}:{col1}~{ln2}:{col2}: {message}",

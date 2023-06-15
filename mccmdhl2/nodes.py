@@ -43,6 +43,23 @@ if TYPE_CHECKING:
 
 NAMESPACEDID = frozenset("0123456789:._-abcdefghijklmnopqrstuvwxyz")
 
+# Test result in MCBE 1.20.0
+PAT_ILLEGAL_WORD = re.compile(
+    r"""
+    (
+      [+-]?\d+
+      (
+        (\.\..*)  # anything starting with "1.." is invalid
+        |
+        (\.\d*)  # floating number is invalid
+      )?  # integer is invalid
+    )
+    |
+    (\.\.[+-]?\d+)  # "..1" is invalid while "..1a" is OK
+    """,
+    flags=re.VERBOSE
+)
+
 def char_check_rule(checker: Callable[[str], bool]):
     def _rule(s: str):
         if all(map(checker, s)):
@@ -199,6 +216,8 @@ class Word(Node):
         word = reader.read_word()
         if not word:
             raise ExpectationFailure("word")
+        if PAT_ILLEGAL_WORD.fullmatch(word):
+            raise ArgParseFailure("error.syntax.illegal_word")
         return word
 
     @classmethod
