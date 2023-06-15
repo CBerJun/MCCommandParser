@@ -103,7 +103,9 @@ class MCCmdParser:
     def suggest(self, line: int, column: int,
                 id_table: _Optional[IdTable] = None) \
             -> _List[HandledSuggestion]:
-        """Give suggestions when cursor is on `location`."""
+        """Predict and give suggestions on what to type next after
+        location specified by `line` and `column`.
+        """
         if not self.has_parsed:
             raise RuntimeError("Source must be parsed completely before "
                 "suggesting")

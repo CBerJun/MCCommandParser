@@ -52,7 +52,7 @@ def str_find_rule(text: str, w: RuleWeight = RULEW_STR_FIND) \
     return _res
 
 class IdTable:
-    def __init__(self, json: Dict[str, Dict[str, str]]):
+    def __init__(self, json: Dict[str, Dict[str, Union[str, None]]]):
         self.map = json
 
     def dump(self, path: str):

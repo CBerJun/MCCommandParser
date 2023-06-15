@@ -947,7 +947,7 @@ class GameMode(CompressedNode):
         res["a"] = res["adventure"]
         return res
 
-    def _allow_ids(self):
+    def _allow_ids(self) -> List[int]:
         res = [0, 1, 2]
         if self.allow_5:
             res.append(5)
@@ -1800,7 +1800,7 @@ class CircleOrArea(CompressedNode):
 
 class FacingOrYXRot(CompressedNode):
     def __init__(self, xrot_optional: Optional[Node] = None,
-                 facing_kwds: dict[str, Any] = {}):
+                 facing_kwds: Dict[str, Any] = {}):
         self.__xrot_branch = xrot_optional
         self.__facing_kwds = facing_kwds
         super().__init__()
@@ -1865,6 +1865,24 @@ def CommandName(name: str, *alias: str):
 
 def command():
     command_root = Empty()
+
+    # Common
+    _spawnevt_nametag = (
+      Wildcard(IdEntityEvent(), wildcard_note="note._wildcard_entity_event")
+        .branch(
+          String()
+            .note("note._name_tag")
+            .finish(EOL)
+        )
+        .finish(EOL)
+    )
+    _optional_selector_end = (Empty()
+      .branch(
+        Selector()
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
 
     _camera_color = (Keyword("color")
       .note("note.camera.fade.color.root")
@@ -1951,7 +1969,6 @@ def command():
 
     def _ExecuteSubcmd(word: str):
         return Keyword(word).note("note.execute.subcmds." + word)
-
     _execute = Empty()
     _execute_cond = (Empty()
       .branch(
@@ -2015,7 +2032,6 @@ def command():
           )
       )
     )
-
     (_execute
       .branch(
         _ExecuteSubcmd("align")
@@ -2181,16 +2197,6 @@ def command():
       .branch(_replaceitem_end)
     )
 
-    _spawnevt_nametag = (
-      Wildcard(IdEntityEvent(), wildcard_note="note._wildcard_entity_event")
-        .branch(
-          String()
-            .note("note._name_tag")
-            .finish(EOL)
-        )
-        .finish(EOL)
-    )
-
     _structure_load_end = (Boolean()
       .note("note.structure.include_entity")
       .branch(
@@ -2287,14 +2293,6 @@ def command():
               )
           )
         )
-
-    _xp_end = (Empty()
-      .branch(
-        Selector()
-          .finish(EOL)
-      )
-      .finish(EOL)
-    )
 
     return (command_root
       .branch(
@@ -2492,11 +2490,7 @@ def command():
       )
       .branch(
         CommandName("clearspawnpoint")
-          .branch(
-            Selector()
-              .finish(EOL)
-          )
-          .finish(EOL)
+          .branch(_optional_selector_end)
       )
       .branch(
         CommandName("clone")
@@ -2785,7 +2779,7 @@ def command():
         CommandName("gamemode")
           .branch(
             GameMode(allow_5=True)
-              .finish(EOL)
+              .branch(_optional_selector_end)
           )
       )
       .branch(
@@ -2996,11 +2990,7 @@ def command():
       )
       .branch(
         CommandName("kill")
-          .branch(
-            Selector()
-              .finish(EOL)
-          )
-          .finish(EOL)
+          .branch(_optional_selector_end)
       )
       .branch(
         CommandName("list")
@@ -4204,10 +4194,10 @@ def command():
                 KeywordCaseInsensitive("l")
                   .note("note.xp.level")
                   .font(Font.meta)
-                  .branch(_xp_end),
+                  .branch(_optional_selector_end),
                 is_close=True
               )
-              .branch(_xp_end)
+              .branch(_optional_selector_end)
           )
       )
     )
