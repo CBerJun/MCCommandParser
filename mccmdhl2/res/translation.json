@@ -420,11 +420,13 @@
             "rotation": "Rotate structure by <value> * 90 degrees clockwise",
             "runthese": "Run test in Strcuture Block within 200 blocks radius",
             "runset": {
-                "root": "Create and run all tests in a class",
+                "root_regular": "Create and run all tests in a class",
+                "root_untilfail": "Create and run tests in a class until a failure",
                 "tag": "Class name",
                 "default": "Run all tests in class \"suite:default\""
             },
             "clearall": "Clear all tests",
+            "stopall": "Stop all currently running tests",
             "create": {
                 "root": "Create the test -- place Structure Block and generate a default structure",
                 "len_x": "X length of structure",

@@ -2154,21 +2154,33 @@ def command():
       )
       .branch(
         _ExecuteSubcmd("if")
-          .branch(
-            _execute_cond
-          )
+          .branch(_execute_cond)
       )
       .branch(
         _ExecuteSubcmd("unless")
-          .branch(
-            _execute_cond
-          )
+          .branch(_execute_cond)
       )
       .branch(
         _ExecuteSubcmd("run")
+          .branch(command_root)
+      )
+    )
+
+    _gametest_runset_end = (Empty()
+      .branch(
+        String()
+          .note("note.gametest.runset.tag")
           .branch(
-            command_root
+            Integer()
+              .note("note.gametest.rotation")
+              .ranged(min=0, max=3)
+              .finish(EOL)
           )
+          .finish(EOL)
+      )
+      .branch(
+        EOL()
+          .note("note.gametest.runset.default")
       )
     )
 
@@ -2880,27 +2892,25 @@ def command():
           )
           .branch(
             Keyword("runset")
-              .note("note.gametest.runset.root")
-              .branch(
-                String()
-                  .note("note.gametest.runset.tag")
-                  .branch(
-                    Integer()
-                      .note("note.gametest.rotation")
-                      .ranged(min=0, max=3)
-                      .finish(EOL)
-                  )
-                  .finish(EOL)
-              )
-              .branch(
-                EOL()
-                  .note("note.gametest.runset.default")
-              )
+              .note("note.gametest.runset.root_regular")
+              .branch(_gametest_runset_end)
+          )
+          .branch(
+            Keyword("runsetuntilfail")
+              .note("note.gametest.runset.root_untilfail")
+              .branch(_gametest_runset_end),
+            version=version_ge((1, 19, 80))
           )
           .branch(
             Keyword("clearall")
               .note("note.gametest.clearall")
               .finish(EOL)
+          )
+          .branch(
+            Keyword("stopall")
+              .note("note.gametest.stopall")
+              .finish(EOL),
+            version=version_ge((1, 19, 80))
           )
           .branch(
             Keyword("create")
