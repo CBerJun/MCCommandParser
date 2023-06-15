@@ -101,3 +101,10 @@ Why is the package named `mccmdhl2`?
 which is also a command parser.
 It used a different algorithm and this project is here to replace that one.
 Therefore, we add a `2` to indicate that this is a completely re-written one.
+
+## Acknowledgement
+Big, *big* thanks to [@missing244](https://github.com/missing244), for:
+ * giving me ideas on optimizing my algorithm
+ * helping improving performance of the program
+ * discovering and reproducing those annoying UI-related bugs for me
+ * always listening to me patiently and supporting me
