@@ -45,10 +45,7 @@ class Popup:
     TEXT_TRY_HIDE_EVENT = "<FocusOut>"
     LISTBOX_CONFIRM_EVENT = "<B1-Double-ButtonRelease>"
 
-    POPUP_HIDE_KEYS = (
-        "Control", "Shift", "Alt", "Meta",
-        "Option", "Command"  # Darwin
-    )
+    POPUP_HIDE_KEYS = ("Escape",)
 
     LABEL_WRAPLENGTH = 400
     ERRMSG_MAX_LENGTH = 100  # Chars
@@ -183,9 +180,12 @@ class Popup:
         # because positioning needs correct toplevel size, if we
         # update position first the window size will be the wrong one
         # (the old one when last time we update the content).
-        # Also `.update` toplevel to make sure we get its correct
-        # size info.
-        self.toplevel.update()
+        # Also we call `self.toplevel.update_idletasks()` to update
+        # window to make sure we get correct size info.
+        # Using `self.toplevel.update()` also updates size info, but it
+        # causes toplevel to handle some events too early and in very
+        # few conditions make the Python call stack overflow.
+        self.toplevel.update_idletasks()
         self.update_position()
 
     def complete(self) -> bool:
@@ -242,8 +242,10 @@ class Popup:
         if keysym == "Tab" or keysym == "Return":
             succeeded = self.complete()
             return "break" if succeeded else None
-        elif keysym == "BackSpace":
-            self.text.delete("insert-1c")
+        elif keysym in self.POPUP_HIDE_KEYS:
+            # Give back focus before destroying
+            self.text.focus_set()
+            self.destroy()
             return "break"
         else:
             raise ValueError
@@ -257,9 +259,7 @@ class Popup:
             res = self._common_keys(keysym)
         except ValueError:
             res = "break"
-            if keysym == "Escape":
-                self.destroy()
-            elif keysym in ("Up", "Down", "Home", "End"):
+            if keysym in ("Up", "Down", "Home", "End"):
                 cur = self._get_listbox_selection()
                 if keysym == "Up":
                     new = max(0, cur - 1)
@@ -273,10 +273,6 @@ class Popup:
                 self.listbox.select_clear(cur)
                 self.listbox.select_set(new)
                 self.listbox.see(new)
-            elif keysym.startswith(self.POPUP_HIDE_KEYS):
-                # Maybe user is doing Control-A or something, we don't
-                # wanna block that "A" key, so destroy window.
-                self.destroy()
             else:
                 res = None
         # When returning None, `Text` will handle this key.
@@ -292,7 +288,10 @@ class Popup:
         except ValueError:
             # Try insert this character
             char = event.char
-            if len(char) != 1:
+            if keysym == "BackSpace":
+                self.text.delete("insert-1c")
+                res = "break"
+            elif len(char) != 1:
                 res = None
             else:
                 p = ord(char)
@@ -301,10 +300,10 @@ class Popup:
                     or 161 <= p <= 255):  # Extended ASCII
                     self.text.insert("insert", char)
                     res = "break"
-                    # We should give back focus when user types
-                    self._focus_back()
                 else:
                     res = None
+            # We should give back focus when user types
+            self._focus_back()
         return res
 
     def on_listbox_confirm(self, event: tkinter.Event):
@@ -381,10 +380,6 @@ class MCCmdText(tkinter.Text):
         # Tkinter count from column 0 while we are counting from 1
         # Using "-1c" to handle this can cause strange problem
 
-    def _cursor_location(self):
-        ln, col = self.cursor_index()
-        return ln - self.line_diff, col + 1
-
     def update_font(self):
         """Register color tags to widget."""
         for font, tkopt in self.FONT2FORMAT.items():
@@ -422,9 +417,6 @@ class MCCmdText(tkinter.Text):
             line_end = self.line_from_index(index2)
         self.update_text(line_start, line_end)
 
-    def cursor_index(self) -> Tuple[int, int]:
-        return self.linecol_from_index(self.index("insert"))
-
     def update_text(self, line_start: int, line_end: Optional[int] = None,
                     popup: bool = True):
         """Recolorize the text from `line_start` to `line_end`.
@@ -433,7 +425,8 @@ class MCCmdText(tkinter.Text):
         # Get parser
         index1 = "%s.0" % line_start
         if line_end is None:
-            index2 = "end"
+            index2 = self.index("end")
+            line_end = self.line_from_index(index2)
         else:
             index2 = "%s.end" % line_end
         src = self.get(index1, index2)
@@ -443,8 +436,8 @@ class MCCmdText(tkinter.Text):
         # Remove old error tags
         self.tag_remove(self.ERROR_TKTAG, index1, index2)
         # Parse & write errors
-        cursor_line, cursor_column = self._cursor_location()
-        cursor_line_tk, _ = self.cursor_index()
+        cursor_line_tk, cursor_column_tk = self.linecol_from_index(
+            self.index("insert"))
         i = line_start
         error_message = None
         while not self.parser.is_finish():
@@ -465,8 +458,15 @@ class MCCmdText(tkinter.Text):
             i += 1
         if error_message is None:
             error_message = self.parser.translator.get("tkapp.no_error")
+        # Get cursor location (if cursor is in the range of update)
+        cursor_line = cursor_line_tk - self.line_diff
+        cursor_column = cursor_column_tk + 1
+        if not 1 <= cursor_line <= line_end - line_start + 1:
+            cursor_line = None  # cursor out of update range
         # Update pop-up
-        if popup:
+        if cursor_line is None:
+            self.popup.destroy()
+        elif popup:
             self.popup.update_content(
                 suggestions=self.parser.suggest(cursor_line, cursor_column),
                 error=error_message
