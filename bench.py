@@ -2,10 +2,10 @@
 import timeit
 
 r = timeit.timeit(
-    stmt="import mccmdhl2",
+    stmt="import mccmdhl2\nmccmdhl2.get_default_tree()",
     number=1
 )
-print("Importing:", r)
+print("Setup:", r)
 
 CMD = "ability @p[tag=,scores={a=..1}] mayfly true"
 

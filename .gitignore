@@ -1,6 +1,11 @@
-__pycache__
-stats/import
-stats/parse
-stats/parse_sep
+# Python bytecode
+__pycache__/
+
+# Statistics
+stats/*.stats
+
+# Generated ID table
 mccmdhl2/res/id_table.json
+
+# IDE settings
 .vscode

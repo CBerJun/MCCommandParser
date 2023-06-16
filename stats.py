@@ -4,9 +4,10 @@ import os
 
 CMD = "ability @p[tag=,scores={a=..1}] mayfly true"
 
-def test_import():
+def test_setup():
     global mccmdhl2
     import mccmdhl2
+    mccmdhl2.get_default_tree()
 
 def test_parse_sep(cmd: str, num: int = 100):
     for _ in range(num):
@@ -20,9 +21,9 @@ def test_parse(cmd: str, num: int = 100):
 def main():
     if not os.path.exists("./stats"):
         os.mkdir("./stats")
-    cProfile.run("test_import()", "stats/import")
-    cProfile.run("test_parse_sep(CMD)", "stats/parse_sep")
-    cProfile.run("test_parse(CMD)", "stats/parse")
+    cProfile.run("test_setup()", "stats/setup.stats")
+    cProfile.run("test_parse_sep(CMD)", "stats/parse_sep.stats")
+    cProfile.run("test_parse(CMD)", "stats/parse.stats")
 
 if __name__ == "__main__":
     main()
