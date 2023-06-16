@@ -1954,11 +1954,27 @@ def command():
         version=version_ge((1, 20, 10))
       )
     )
-    _camera_rot = (Keyword("rot")
-      .note("note.camera.set.rot")
+    _camera_rot = (Empty()
       .branch(
-        YawPitch()
-          .finish(EOL)
+        Keyword("rot")
+          .note("note.camera.set.rot")
+          .branch(
+            YawPitch()
+              .finish(EOL)
+          )
+      )
+      .branch(
+        Keyword("facing")
+          .note("note._facing")
+          .branch(
+            Selector()
+              .finish(EOL)
+          )
+          .branch(
+            Pos3D()
+              .finish(EOL)
+          ),
+        version=version_ge((1, 20, 10))
       )
     )
     _camera_set_end = (Empty()
