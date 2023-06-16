@@ -35,7 +35,14 @@ from .autocompleter import *
 if _TYPE_CHECKING:
     from .parser import MCVersion
 
-DEFAULT_TREE = mcfuncline()
+_DEFAULT_TREE = None
+
+def get_default_tree() -> Node:
+    """Load and get the default tree used by parser."""
+    global _DEFAULT_TREE
+    if _DEFAULT_TREE is None:
+        _DEFAULT_TREE = mcfuncline()
+    return _DEFAULT_TREE
 
 def load_resources():
     """(Re)Load default `IdTable` & `Translator`."""
@@ -58,10 +65,13 @@ load_resources()
 
 class MCCmdParser:
     def __init__(self, src: str,
-                 tree: Node = DEFAULT_TREE,
+                 tree: _Optional[Node] = None,
                  version: "MCVersion" = (1, 19, 80),
                  translator: _Optional[Translator] = None):
-        self.tree = tree
+        if tree is None:
+            self.tree = get_default_tree()
+        else:
+            self.tree = tree
         if not isinstance(self.tree, Empty):
             # Make sure there's an empty root node for autocompleter
             self.tree = Empty().branch(self.tree)
@@ -70,7 +80,9 @@ class MCCmdParser:
         if translator is None:
             self.translator = BASE_TRANSLATOR
         else:
-            self.translator = Translator.merge_from(translator, BASE_TRANSLATOR)
+            self.translator = Translator.merge_from(
+                translator, BASE_TRANSLATOR
+            )
         self.reader = Reader(src)
         self.marker = Marker(self.reader, version)
         self.has_parsed = False
