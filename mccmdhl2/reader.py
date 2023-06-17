@@ -186,15 +186,16 @@ class Reader:
         return CharLocation(
             self.current_line, self.current_column, self.pointer)
 
-    def linecol_to_location(self, line: int, column: int):
-        # XXX Using another `Reader` is not efficient
-        reader = Reader(self.src)
-        while not reader.is_finish():
-            if (reader.current_line == line and
-                reader.current_column == column):
-               return reader.get_location()
-            reader.next()
-        raise ValueError("Invalid line & column")
+    def linecol_to_location(self, line: int, column: int) -> CharLocation:
+        m = re.match(r"((?:.*\n){%d})(.*)" % (line - 1), self.src)
+        if m is None:
+            raise ValueError("Invalid line %d" % line)
+        R, L = m.groups()
+        # `R`: All chars before `line` (including \n)
+        # `L`: Chars on line `line`
+        if column - 1 > len(L):
+            raise ValueError("Invalid column %d" % column)
+        return CharLocation(line, column, column - 1 + len(R))
 
     def get_slice(self, begin: CharLocation, end: CharLocation) -> str:
         return self.src[begin.pointer:end.pointer]
