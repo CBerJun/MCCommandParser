@@ -15,8 +15,3 @@ The files here are:
  - `ease_translation.json`: The translation for easing functions. This
    is passed to `--ease` or `-y` option of `gen_id_table.py` to
    generate explanation of easing functions in an ID table.
-
-## Unsupported IDs in default ID table
-The following IDs are not supported in default ID table so far:
- - Game rule
- - Structure
