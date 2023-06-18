@@ -330,9 +330,11 @@ class MCCmdText(tkinter.Text):
         self.suggest_kwds = suggest_kwds
         self.popup = Popup(self)
         # Overwrite insert and delete
-        redirector = WidgetRedirector(self)
-        self.original_ins = redirector.register("insert", self.new_insert)
-        self.original_del = redirector.register("delete", self.new_delete)
+        self.redirector = WidgetRedirector(self)
+        self.original_ins = self.redirector.register(
+            "insert", self.new_insert)
+        self.original_del = self.redirector.register(
+            "delete", self.new_delete)
         # Create color font
         # NOTE:
         #  1. If you wish to change `FONT2FORMAT`, please call `update_font`
