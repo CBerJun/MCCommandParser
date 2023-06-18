@@ -43,6 +43,7 @@ class Popup:
     KEYPRESS_EVENT = "<Key>"
     POPUP_HIDE_EVENT = "<FocusOut>"
     TEXT_TRY_HIDE_EVENT = "<FocusOut>"
+    TEXT_HIDE_EVENT = "<Button-1>"
     LISTBOX_CONFIRM_EVENT = "<B1-Double-ButtonRelease>"
 
     POPUP_HIDE_KEYS = ("Escape",)
@@ -95,6 +96,8 @@ class Popup:
         self.id_hidep = self.toplevel.bind(
             self.POPUP_HIDE_EVENT, self.on_hide)
         self.id_hidet = self.text.bind(
+            self.TEXT_HIDE_EVENT, self.on_hide)
+        self.id_tryhide = self.text.bind(
             self.TEXT_TRY_HIDE_EVENT, self.on_try_hide)
         self.id_keyp = self.toplevel.bind(
             self.KEYPRESS_EVENT, self.on_toplevel_key)
@@ -141,9 +144,12 @@ class Popup:
         assert self.scrollbar
         assert self.listbox
         assert self.label
+        # Re-focus on `Text`
+        self.text.focus_set()
         # Unbind events
         self.toplevel.unbind(self.POPUP_HIDE_EVENT, self.id_hidep)
-        self.text.unbind(self.TEXT_TRY_HIDE_EVENT, self.id_hidet)
+        self.text.unbind(self.TEXT_TRY_HIDE_EVENT, self.id_tryhide)
+        self.text.unbind(self.TEXT_HIDE_EVENT, self.id_hidet)
         self.text.unbind(self.KEYPRESS_EVENT, self.id_keyt)
         self.listbox.unbind(self.LISTBOX_CONFIRM_EVENT, self.id_lb)
         # Destroy
@@ -152,7 +158,6 @@ class Popup:
         self.label.destroy()
         self.toplevel.destroy()
         self.scrollbar = self.listbox = self.label = self.toplevel = None
-        self.text.focus_set()  # Re-focus on `Text`
 
     def update_content(self,
                suggestions: List["HandledSuggestion"],
@@ -229,9 +234,7 @@ class Popup:
             self.destroy()
 
     def on_hide(self, event: tkinter.Event):
-        """Tkinter callback: When toplevel does not have focus."""
-        if self.toplevel is None:
-            return
+        """Tkinter callback: When toplevel should be hidden."""
         self.destroy()
 
     def _common_keys(self, keysym: str):
