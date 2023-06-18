@@ -3452,7 +3452,7 @@ def command():
         CommandName("schedule")
           .branch(
             Keyword("on_area_loaded")
-              .note("note.area.root")
+              .note("note.schedule.area.root")
               .branch(
                 Keyword("add")
                   .branch(
