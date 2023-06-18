@@ -51,7 +51,7 @@ class Translator:
         return cls()
 
     @classmethod
-    def merge_from(cls, *translators):
+    def merge_from(cls, *translators: "Translator"):
         res = {}
         for trans in translators:
             res.update(trans.map)

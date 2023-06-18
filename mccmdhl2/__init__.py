@@ -81,7 +81,7 @@ class MCCmdParser:
             self.translator = BASE_TRANSLATOR
         else:
             self.translator = Translator.merge_from(
-                translator, BASE_TRANSLATOR
+                BASE_TRANSLATOR, translator
             )
         self.reader = Reader(src)
         self.marker = Marker(self.reader, version)
