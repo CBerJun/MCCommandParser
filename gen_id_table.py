@@ -194,7 +194,9 @@ def handle_lang(path: str):
                 if k.count(".") == 0 and k.lower() == k:
                     res["item"][k] = text
             elif key.startswith("entity.") and key.endswith(".name"):
-                res["entity"][key[7:-5]] = text
+                k = key[7:-5]
+                if k.count(".") == 0 and k.lower() == k:
+                    res["entity"][k] = text
             elif key.startswith("tile.") and key.endswith(".name"):
                 k = key[5:-5]
                 if k.count(".") == 0 and k.lower() == k:
