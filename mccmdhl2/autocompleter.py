@@ -55,13 +55,13 @@ class IdTable:
     def __init__(self, json: Dict[str, Dict[str, Union[str, None]]]):
         self.map = json
 
-    def dump(self, path: str):
-        with open(path, "w") as file:
+    def dump(self, path: str, **kwds):
+        with open(path, "w", **kwds) as file:
             json.dump(self.map, file)
 
     @classmethod
-    def from_json(cls, path: str):
-        with open(path, "r") as file:
+    def from_json(cls, path: str, **kwds):
+        with open(path, "r", **kwds) as file:
             j = json.load(file)
         return cls(j)
 

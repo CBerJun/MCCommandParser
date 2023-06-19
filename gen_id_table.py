@@ -24,6 +24,7 @@ import os
 import re
 import sys
 import json
+import codecs
 import argparse
 from mccmdhl2 import IdTable
 from typing import List, Optional
@@ -149,6 +150,11 @@ argparser.add_argument(
     default="./mccmdhl2/res/id_table.json"
 )
 argparser.add_argument(
+    "-C", "--encoding", metavar="CODEC",
+    help="specify file encoding",
+    default="utf-8"
+)
+argparser.add_argument(
     "-J", "--strict-json", action="store_true",
     help="use standard JSON (without comments)"
 )
@@ -164,6 +170,13 @@ def json_loads(src: str):
 
 def json_load(file):
     return json_loads(file.read())
+
+def read_json(path: str):
+    with open(path, "r", encoding=args.encoding) as file:
+        try:
+            return json_load(file)
+        except json.JSONDecodeError:
+            return None
 
 # Go
 def handle_lang(path: str):
@@ -205,14 +218,12 @@ def handle_lang(path: str):
     return IdTable(res)
 
 def handle_json_file(path: str):
-    try:
-        res = IdTable.from_json(path)
-    except json.JSONDecodeError:
+    res = read_json(path)
+    if res is None:
         print("JSON error, skipping ID table %s" % path)
         return None
-    else:
-        print("Handled ID table %s" % path)
-        return res
+    print("Handled ID table %s" % path)
+    return IdTable(res)
 
 def handle_json(src: str):
     try:
@@ -241,12 +252,10 @@ def handle_bp_entity(path: str):
         spath = os.path.join(path, name)
         if not os.path.isfile(spath):
             continue
-        with open(spath, "r") as file:
-            try:
-                definition = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping entity %s" % spath)
-                continue
+        definition = read_json(spath)
+        if definition is None:
+            print("JSON error, skipping entity %s" % spath)
+            continue
         # Handle JSON
         ## Events
         try:
@@ -284,12 +293,10 @@ def handle_rp_entity(path: str):
         spath = os.path.join(path, name)
         if not os.path.isfile(spath):
             continue
-        with open(spath, "r") as file:
-            try:
-                definition = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping client entity %s" % spath)
-                continue
+        definition = read_json(spath)
+        if definition is None:
+            print("JSON error, skipping client entity %s" % spath)
+            continue
         # Handle JSON
         try:
             anim_d = definition["minecraft:client_entity"]["description"] \
@@ -303,12 +310,10 @@ def handle_rp_entity(path: str):
     return IdTable({"animation_ref": res, "rpac_state": res})
 
 def handle_missing_bs(path: str):
-    with open(path, "r") as file:
-        try:
-            root = json_load(file)
-        except json.JSONDecodeError:
-            print("JSON error, skipping block state %s" % path)
-            return None
+    root = read_json(path)
+    if root is None:
+        print("JSON error, skipping block state %s" % path)
+        return None
     res = {}
     if not isinstance(root, dict):
         return None
@@ -352,12 +357,10 @@ def _id_read(root: str, save_name: str, user_repr: str):
             spath = os.path.join(path, name)
             if not os.path.isfile(spath):
                 continue
-            with open(spath, "r") as file:
-                try:
-                    definition = json_load(file)
-                except json.JSONDecodeError:
-                    print("JSON error, skipping %s %s" % (user_repr, spath))
-                    continue
+            definition = read_json(spath)
+            if definition is None:
+                print("JSON error, skipping %s %s" % (user_repr, spath))
+                continue
             # Handle JSON
             try:
                 id_ = definition[root]["description"]["identifier"]
@@ -373,12 +376,10 @@ handle_fog = _id_read("minecraft:fog_settings", "fog", "fog")
 handle_particle = _id_read("particle_effect", "particle", "particle")
 
 def handle_biome(path: str):
-    with open(path, "r") as file:
-        try:
-            d = json_load(file)
-        except json.JSONDecodeError:
-            print("JSON error, skipping biome %s" % path)
-            return
+    d = read_json(path)
+    if d is None:
+        print("JSON error, skipping biome %s" % path)
+        return
     if (not isinstance(d, dict)
         or "biomes" not in d
         or not isinstance(d["biomes"], dict)
@@ -389,12 +390,10 @@ def handle_biome(path: str):
     return IdTable({"biome": dict.fromkeys(d["biomes"].keys())})
 
 def handle_rp_block(path: str):
-    with open(path, "r") as file:
-        try:
-            d = json_load(file)
-        except json.JSONDecodeError:
-            print("JSON error, skipping client blocks %s" % path)
-            return
+    d = read_json(path)
+    if d is None:
+        print("JSON error, skipping client blocks %s" % path)
+        return
     if not isinstance(d, dict):
         print("Invalid blocks.json, skipping %s" % path)
         return
@@ -402,12 +401,10 @@ def handle_rp_block(path: str):
     return IdTable({"block": dict.fromkeys(d.keys())})
 
 def handle_sound(path: str):
-    with open(path, "r") as file:
-        try:
-            d = json_load(file)
-        except json.JSONDecodeError:
-            print("JSON error, skipping sound %s" % path)
-            return
+    d = read_json(path)
+    if d is None:
+        print("JSON error, skipping sound %s" % path)
+        return
     if (not isinstance(d, dict)
         or "sound_definitions" not in d
         or not isinstance(d["sound_definitions"], dict)
@@ -454,12 +451,10 @@ def handle_rpac(path: str):
         spath = os.path.join(path, fname)
         if not os.path.isfile(spath):
             continue
-        with open(spath, "r") as file:
-            try:
-                d = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping RPAC %s" % spath)
-                return
+        d = read_json(spath)
+        if d is None:
+            print("JSON error, skipping RPAC %s" % spath)
+            return
         if (not isinstance(d, dict)
             or "animation_controllers" not in d
             or not isinstance(d["animation_controllers"], dict)
@@ -486,12 +481,10 @@ def handle_rp_anim(path: str):
     all_anims = set()
     for fname in os.listdir(path):
         spath = os.path.join(path, fname)
-        with open(spath, "r") as file:
-            try:
-                d = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping animation %s" % spath)
-                continue
+        d = read_json(spath)
+        if d is None:
+            print("JSON error, skipping animation %s" % spath)
+            continue
         if (not isinstance(d, dict)
             or "animations" not in d
             or not isinstance(d["animations"], dict)
@@ -506,12 +499,10 @@ def handle_recipe(path: str):
     all_recipes = []
     for fname in os.listdir(path):
         spath = os.path.join(path, fname)
-        with open(spath, "r") as file:
-            try:
-                d = json_load(file)
-            except json.JSONDecodeError:
-                print("JSON error, skipping recipe %s" % spath)
-                continue
+        d = read_json(spath)
+        if d is None:
+            print("JSON error, skipping recipe %s" % spath)
+            continue
         if not isinstance(d, dict):
             print("Invalid recipe definition, skipping %s" % spath)
             continue
@@ -531,12 +522,10 @@ def handle_recipe(path: str):
     return IdTable({"recipe": dict.fromkeys(all_recipes)})
 
 def handle_ease(path: str):
-    with open(path, "r") as file:
-        try:
-            d = json_load(file)
-        except json.JSONDecodeError:
-            print("JSON error, skipping easing %s" % path)
-            return
+    d = read_json(path)
+    if d is None:
+        print("JSON error, skipping easing %s" % path)
+        return
     if not ("range" in d and "func" in d) \
        or not (isinstance(d["range"], dict), isinstance(d["func"], dict)):
         print("Object 'range' & 'func' required, skipping easing %s" % path)
@@ -572,9 +561,13 @@ TYPE2FUNC = {
     "particle": handle_particle
 }
 
-tables = []
+try:
+    codecs.lookup(args.encoding)
+except LookupError:
+    argparser.error("invalid codec %r" % args.encoding)
 if not hasattr(args, "input_list"):
     argparser.error("no input file")
+tables = []
 for type_, value in args.input_list:
     res = TYPE2FUNC[type_](value)
     if res is not None:
@@ -582,7 +575,7 @@ for type_, value in args.input_list:
 
 result = IdTable.merge_from(*tables)
 try:
-    result.dump(args.out)
+    result.dump(args.out, encoding=args.encoding)
 except OSError:
     argparser.error("error when dumping result: %s: %s"
                     % sys.exc_info()[:2])

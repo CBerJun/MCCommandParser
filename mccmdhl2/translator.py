@@ -28,9 +28,9 @@ class Translator:
             self.map.update(parent.map)
 
     @classmethod
-    def from_json(cls, path: str):
+    def from_json(cls, path: str, **kwds):
         inst = cls()
-        with open(path, "r") as file:
+        with open(path, "r", **kwds) as file:
             j = json.load(file)
         def _handle(obj: dict, _prefix: List[str] = []):
             assert isinstance(obj, dict)
