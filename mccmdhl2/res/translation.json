@@ -12,7 +12,7 @@
                     "a": "All players",
                     "p": "Nearest player",
                     "r": "Random player",
-                    "initiator": "Player who opened dialogue"
+                    "initiator": "Player who opened dialogue (NPC only)"
                 },
                 "begin": "Add entity filters",
                 "end": "End of entity filters",
@@ -116,7 +116,7 @@
             "creative": "Creative mode (1)",
             "adventure": "Adventure mode (2)",
             "spectator": "Spectator mode",
-            "default": "Use world default mode"
+            "default": "World default mode"
         },
         "_block_state": {
             "begin": "Begin of block states",
@@ -141,8 +141,8 @@
         },
         "_facing": "Facing an entity or position",
         "_blocks_scan_mode": {
-            "all": "All blocks included",
-            "masked": "Air not included"
+            "all": "Check all blocks",
+            "masked": "Ignore Air blocks"
         },
         "_tickingarea": "Ticking area name",
         "_json": {
@@ -150,7 +150,7 @@
             "_libs": {
                 "lock": {
                     "lock_in_slot": "Fix item in the slot",
-                    "lock_in_inventory": "Item can be moved by player"
+                    "lock_in_inventory": "Fix item in inventory"
                 }
             },
             "$item_components@object": {
@@ -185,14 +185,14 @@
                         "_keys": {
                             "text": "Plain text",
                             "translate": "Localization key / Substituted string",
-                            "with": "Substitutions (used with `translate`)",
-                            "score": "Value on scoreboard",
+                            "with": "Substitutions (used with 'translate')",
+                            "score": "Score on scoreboard",
                             "selector": "Name of entities"
                         },
                         "!score@object": {
                             "_keys": {
                                 "objective": "Scoreboard objective",
-                                "name": "Target"
+                                "name": "Score holder"
                             }
                         }
                     }
@@ -202,7 +202,7 @@
         "help": {
             "root": "Show help messages about commands",
             "on": {
-                "page": "Show given page of command list",
+                "page": "Show a specific page of command list",
                 "page_1": "Show first page of command list",
                 "command": "Show usage of given command"
             }
@@ -210,14 +210,14 @@
         "ability": {
             "root": "[EDU] Manage players' abilities",
             "query": {
-                "unknown": "Unknown query",
+                "unknown": "(Unknown query)",
                 "ability": "Show state of given ability"
             },
-            "set": "Modify player's ability"
+            "set": "Set state of specified ability of target"
         },
         "alwaysday": {
             "root": "Lock/Unlock Alwaysday",
-            "lock": "Alwaysday lock",
+            "lock": "Lock Alwaysday",
             "set": "Set Alwaysday to given value"
         },
         "camera": {
@@ -250,9 +250,9 @@
             }
         },
         "camerashake": {
-            "root": "Apply shaking to player's view",
+            "root": "Manage shaking of cameras (players' views)",
             "add": {
-                "root": "Shake player's camera",
+                "root": "Shake players' camera",
                 "intensity": "Intensity",
                 "seconds": "Duration (seconds)",
                 "types": {
@@ -260,25 +260,25 @@
                     "rotational": "Rotational"
                 }
             },
-            "stop": "Stop to shake player's screen"
+            "stop": "Stop to shake players' camera"
         },
         "clear": {
-            "root": "Clear player's inventory",
+            "root": "Clear players' inventory",
             "max_count": "Max item count; -1 -> No Limit"
         },
         "clearspawnpoint": {
-            "root": "Unset player's spawn point"
+            "root": "Unset players' spawn point"
         },
         "clone": {
             "root": "Copy and paste blocks",
             "masks": {
-                "masked": "Do not copy air blocks",
+                "masked": "Do not copy Air blocks",
                 "replace": "Replace all blocks in destination area"
             },
             "clones": {
-                "force": "Copy even if there's overlap between areas",
-                "move": "Replace the copied block with air",
-                "normal": "Normal"
+                "force": "Copy even if there's overlap between two areas",
+                "move": "Replace the copied block in source area with Air",
+                "normal": "No special effect"
             },
             "filtered": "Only clone blocks of specified type"
         },
@@ -293,10 +293,10 @@
             "damager": "Set damager"
         },
         "deop": {
-            "root": "Remove Operator from player"
+            "root": "Remove Operator permission from a player"
         },
         "dialogue": {
-            "root": "Open/Change dialogue for players",
+            "root": "[EDU] Manage dialogues with NPCs",
             "modes": {
                 "open": "Open a dialogue",
                 "change": "Change scene for a dialogue"
@@ -317,10 +317,10 @@
         },
         "effect": {
             "root": "Manage effects (i.e. buffs)",
-            "clear": "Clear all effects from player",
-            "seconds": "Duration, in seconds (in ticks for 3 invisible buffs)",
-            "amplifier": "Level minus 1 (e.g. 0=Level 1)",
-            "hide_particles": "Hide potion particles"
+            "clear": "Clear all of players' effects",
+            "seconds": "Duration (in seconds; in ticks for 3 invisible buffs)",
+            "amplifier": "Amplifier (level-1)",
+            "hide_particles": "Whether to hide potion particles"
         },
         "enchant": {
             "root": "Enchant item held by players",
@@ -334,7 +334,7 @@
             "root": "Run another command in specified context and conditions",
             "subcmds": {
                 "align": "Convert position to block position (floor)",
-                "anchored": "Whether position is at eyes of entity or feet",
+                "anchored": "Set origin of local coordinate to eyes or feet",
                 "as": "Execute as an entity",
                 "at": "Execute at place of an entity",
                 "facing": "Change rotation according to facing place",
@@ -346,9 +346,9 @@
                 "run": "Specify the command to run"
             },
             "tests": {
-                "block": "Type of a block",
+                "block": "Check type of a block",
                 "blocks": "Compare two areas",
-                "entity": "Whether an entity exists",
+                "entity": "Check whether an entity exists",
                 "score": {
                     "root": "Scores on scoreboard",
                     "matches": "Specify a range",
@@ -372,8 +372,7 @@
             },
             "entity_variant": "Use data from an entity",
             "old": {
-                "detect": "Run only when type of a block satisfies",
-                "block_data": "Block data value"
+                "detect": "Run only when type of a block satisfies"
             }
         },
         "fill": {
@@ -384,13 +383,13 @@
                     "all": "Replace all blocks"
                 },
                 "destroy": "Break original block as if a player digs it (drop item, play animation)",
-                "hollow": "Create a hollow cuboid, replace inside with air blocks",
-                "keep": "Replace only air blocks",
+                "hollow": "Create a hollow cuboid, replace inside with Air blocks",
+                "keep": "Replace only Air blocks",
                 "outline": "Create a hollow cuboid, leave inside the original blocks"
             }
         },
         "fog": {
-            "root": "Manage fog effect on players' screens",
+            "root": "Manage fog effect",
             "modes": {
                 "remove": "Remove all fogs pushed with given name",
                 "pop": "Remove first fog pushed with given name",
@@ -399,7 +398,7 @@
             "user_provided_name": "Name of this fog"
         },
         "function": {
-            "root": "Run commands defined in a .mcfunction file",
+            "root": "Run a function file",
             "path": "Path to function file"
         },
         "gamemode": {
@@ -455,7 +454,7 @@
         },
         "kick": {
             "root": "Kick player out of game",
-            "target": "Target (Player name / selector with name argument)",
+            "target": "Target (Player name / selector with 'name' argument)",
             "reason": "Reason"
         },
         "kill": {
@@ -482,9 +481,9 @@
                     "offhand": "Use weapon on executer's off hand"
                 }
             },
-            "give": "Give the generated items to a player",
-            "insert": "Insert the generated items into a block's storage",
-            "spawn": "Drop the items as entities",
+            "give": "Give the generated items to players",
+            "insert": "Distribute the generated items to a block's storage",
+            "spawn": "Drop the generated items as entities",
             "replace": {
                 "root": "Replace specified slots with generated items",
                 "entity": "Replace entity inventory",
@@ -493,7 +492,7 @@
             }
         },
         "me": {
-            "root": "Show a message about yourself"
+            "root": "Show a message about executer"
         },
         "mobevent": {
             "root": "Manage mob events",
@@ -559,8 +558,8 @@
             "root": "Manage riding relationships between entities",
             "mount": "Let target ride on another entity",
             "tp_modes": {
-                "teleport_rider": "Teleport rider",
-                "teleport_ride": "Teleport ride"
+                "teleport_rider": "Teleport rider to ride",
+                "teleport_ride": "Teleport ride to rider"
             },
             "fill_modes": {
                 "if_group_fits": "Only proceed when all riders can ride on that ride",
@@ -568,8 +567,8 @@
             },
             "dismount": "Make target dismount",
             "dismount_rider": "Make target's riders dismount from target",
-            "summon_rider": "Summon a rider for target",
-            "summon_ride": "Summon a ride for target",
+            "summon_rider": "Summon an entity that rides on target",
+            "summon_ride": "Summon an entity for target to ride on",
             "ride_modes": {
                 "skip_riders": "Skip if the rider already has a ride",
                 "no_ride_change": "Skip if the rider already has a ride or a rider",
@@ -614,7 +613,7 @@
                     "no_max": "Test whether score >= given value"
                 },
                 "operation": {
-                    "root": "Math operations on scores",
+                    "root": "Math operations between 2 scores",
                     "operators": {
                         "=": "Set A to B",
                         "+=": "Set A to A+B",
@@ -641,7 +640,7 @@
                 },
                 "remove": "Remove an objective",
                 "setdisplay": {
-                    "root": "Displaying objectives to players",
+                    "root": "Display objectives to players",
                     "slots": {
                         "sidebar": "On the right of screen",
                         "list": "On pause menu",
@@ -685,7 +684,7 @@
             "root": "Place a block at specified position",
             "modes": {
                 "destroy": "Break original block as if a player digs it (drop item, play animation)",
-                "keep": "Replace only air blocks",
+                "keep": "Replace only Air blocks",
                 "replace": "Replace the original block anyway"
             }
         },
@@ -702,7 +701,7 @@
             "here": "Use command execution point as spawn point"
         },
         "spreadplayers": {
-            "root": "Spread entities to different location within an area",
+            "root": "Spread entities to different locations within an area",
             "distance": "Min distance between any 2 victims",
             "max_range": "Half the length of side of the square spreading area"
         },
@@ -741,7 +740,7 @@
                 },
                 "anim_sec": "Duration of animation (seconds)",
                 "water_logged": "Whether to waterlog blocks loaded in water or not",
-                "integrity": "Chance a block to be loaded (0~100)",
+                "integrity": "Integrity (chance of each block being loaded) (0~100)",
                 "seed": "Seed of random algorithm that decides whether a block is placed according to integrity"
             },
             "delete": "Delete a structure"
@@ -752,7 +751,7 @@
         "tag": {
             "root": "Manage entity tags",
             "tag": "Entity tag",
-            "wildcard_target": "All entities tracking in system",
+            "wildcard_target": "All entities tracked in system",
             "add": "Give entities a tag",
             "remove": "Remove a tag from entities",
             "list": "List the tags entities have"
@@ -777,7 +776,7 @@
         },
         "tickingarea": {
             "root": "Manage ticking areas",
-            "set_preload": "Mark/Unmark the area as preload (load first)",
+            "set_preload": "Preload area (load it first) or not",
             "add": "Add a ticking area",
             "remove": "Remove a ticking area",
             "remove_all": "Remove all ticking areas",
@@ -827,7 +826,7 @@
                 "hold": "Stay time (game ticks)",
                 "fade_out": "Fade out time (game ticks)"
             },
-            "reset": "Reset times settings to 10, 70, 20"
+            "reset": "Reset times settings to default value"
         },
         "titleraw": {
             "root": "Manage screen titles using rawtext"
@@ -856,7 +855,7 @@
         "weather": {
             "root": "Manage weather",
             "set": {
-                "duration": "Duration of current weather (game ticks)",
+                "duration": "Duration of specified weather (game ticks)",
                 "weathers": {
                     "clear": "Sunny day",
                     "rain": "Rainy day",
@@ -868,7 +867,7 @@
         "xp": {
             "root": "Add/Remove players' experience point/level",
             "level": "In levels",
-            "amount": "Amount to add"
+            "amount": "Amount to add (<0 -> remove)"
         }
     },
     "error": {
@@ -925,7 +924,7 @@
         "chars": "{chars}",
         "swizzle": "{swizzle}",
         "no_idtable": {
-            "_hint": "(Load proper ID table to see full list)",
+            "_hint": "(Load proper ID table to see hints)",
             "item": "[Item Type]",
             "entity": "[Entity Type]",
             "family": "[Entity Family]",
@@ -933,7 +932,7 @@
             "block_slot": "[Block Slot Type]",
             "block": "[Block Type]",
             "damage": "[Damage Cause]",
-            "effect": "[Buff]",
+            "effect": "[Effect (Buff)]",
             "entity_event": "[Entity Event]",
             "fog": "[Fog]",
             "game_rule": "[Game Rule]",
