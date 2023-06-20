@@ -246,8 +246,6 @@ class Popup:
             succeeded = self.complete()
             return "break" if succeeded else None
         elif keysym in self.POPUP_HIDE_KEYS:
-            # Give back focus before destroying
-            self.text.focus_set()
             self.destroy()
             return "break"
         else:
