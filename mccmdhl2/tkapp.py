@@ -470,10 +470,10 @@ class MCCmdText(tkinter.Text):
         if cursor_line is None:
             self.popup.destroy()
         elif popup:
-            self.popup.update_content(
-                suggestions=self.parser.suggest(cursor_line, cursor_column),
-                error=error_message
+            suggestions = self.parser.suggest(
+                cursor_line, cursor_column, **self.suggest_kwds
             )
+            self.popup.update_content(suggestions, error_message)
         # Remove old font tags
         for font in self.FONT2FORMAT:
             self.tag_remove(self.font_to_tag(font), index1, index2)
