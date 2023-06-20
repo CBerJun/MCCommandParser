@@ -191,10 +191,10 @@ def handle_lang(path: str):
             line = file.readline()
             if not line:
                 break
-            line = line.strip()
             comment_index = line.find("#")
             if comment_index != -1:
                 line = line[:comment_index]
+            line = line.strip()
             if not line:
                 continue
             equals_index = line.find("=")
