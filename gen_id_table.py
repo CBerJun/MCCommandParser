@@ -161,6 +161,9 @@ argparser.add_argument(
 args = argparser.parse_args()
 
 # Util
+def open_(*args_, **kwds):
+    return open(*args_, **kwds, encoding=args.encoding)
+
 def json_loads(src: str):
     if not args.strict_json:
         if not src.endswith("\n"):
@@ -172,7 +175,7 @@ def json_load(file):
     return json_loads(file.read())
 
 def read_json(path: str):
-    with open(path, "r", encoding=args.encoding) as file:
+    with open_(path, "r") as file:
         try:
             return json_load(file)
         except json.JSONDecodeError:
@@ -183,7 +186,7 @@ def handle_lang(path: str):
     res = {k: {} for k in (
         "item", "entity", "block"
     )}
-    with open(path, "r") as file:
+    with open_(path, "r") as file:
         while True:
             line = file.readline()
             if not line:
