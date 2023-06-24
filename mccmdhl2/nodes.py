@@ -79,8 +79,8 @@ def version_ge(version: "MCVersion") -> "VersionFilter":
 def version_lt(version: "MCVersion") -> "VersionFilter":
     return lambda v: v < version
 
-def re_word(pat: str):
-    return re.compile(r'(\b|\s+)(%s)(\b|\s+)' % pat)
+def re_word(pat: str, **kwds):
+    return re.compile(r'(\b|\s+)(%s)(\b|\s+)' % pat, **kwds)
 
 def dict_getter(d: dict, *path: List[str]):
     try:
@@ -1778,11 +1778,13 @@ def RawText():
 
 class Molang(RegexNode):
     RE_DEFS = (
-        (re_word(r"return|this|loop|for_each|break|continue"),
+        (re_word(r"return|this|loop|for_each|break|continue",
+                 flags=re.IGNORECASE),
          Font.molang_keyword),
         (re.compile(
             r"\b(q(uery)?|v(ariable)?|math|t(emp)?|c(ontext)?"
-            r")(?=\s*\.)"),
+            r")(?=\s*\.)",
+            flags=re.IGNORECASE),
          Font.molang_class),
         (re.compile(r'^"|"$'), Font.meta),  # Quoted string
         (re.compile(r"'[^']*'"), Font.string),
