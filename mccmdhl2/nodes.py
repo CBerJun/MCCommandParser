@@ -3340,7 +3340,7 @@ def command():
                 Keyword("give")
                   .note("note.recipe.give")
                   .branch(
-                    IdRecipe()
+                    Wildcard(IdRecipe(), wildcard_note="note.recipe.wildcard")
                       .finish(EOL)
                   )
               )
@@ -3348,7 +3348,7 @@ def command():
                 Keyword("take")
                   .note("note.recipe.take")
                   .branch(
-                    IdRecipe()
+                    Wildcard(IdRecipe(), wildcard_note="note.recipe.wildcard")
                       .finish(EOL)
                   )
               )

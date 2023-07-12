@@ -539,7 +539,8 @@
         "recipe": {
             "root": "Manage players' recipes",
             "give": "Give/Unlock a recipe",
-            "take": "Take/Lock a recipe"
+            "take": "Take/Lock a recipe",
+            "wildcard": "All the recipes"
         },
         "reload": {
             "root": "Reload functions & scripts in behavior packs"
