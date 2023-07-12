@@ -194,6 +194,7 @@
         "showDeathMessages": "[B] Send messages when players or pets die",
         "showTags": "[B] Show item components of items",
         "spawnRadius": "[I] Spawn radius of world spawn point",
-        "tntExplodes": "[B] TNT explodes enabled"
+        "tntExplodes": "[B] TNT explodes enabled",
+        "playersSleepingPercentage": "[I] What percentage of players in Overworld must sleep to skip night"
     }
 }
