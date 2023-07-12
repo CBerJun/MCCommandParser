@@ -27,7 +27,8 @@ import json
 import codecs
 import argparse
 from mccmdhl2 import IdTable
-from typing import List, Optional
+from typing import List, Optional, Dict, Callable
+from functools import partial
 
 JSON_TOKENIZE = re.compile(
     r"""
@@ -143,6 +144,21 @@ argparser.add_argument(
     "-p", "--particle", metavar="DIR",
     help="input: a directory of particle definitions",
     action=action_input("particle", vtype="dir")
+)
+argparser.add_argument(
+    "--bp", metavar="DIR",
+    help="input: a bahavior pack directory",
+    action=action_input("bp", vtype="dir")
+)
+argparser.add_argument(
+    "--rp", metavar="DIR",
+    help="input: a resource pack directory",
+    action=action_input("rp", vtype="dir")
+)
+argparser.add_argument(
+    "--pack-lang", metavar="LANG",
+    help="used with --bp or --rp to specify language",
+    default="en_US"
 )
 argparser.add_argument(
     "-o", "--out", metavar="PATH",
@@ -545,6 +561,40 @@ def handle_ease(path: str):
     print("Handled easing %s" % path)
     return IdTable({"ease_type": res})
 
+BP_DISPATCH = {
+    "entities/": handle_bp_entity,
+    "loot_tables/": handle_loot,
+    "recipes/": handle_recipe,
+}
+RP_DISPATCH = {
+    "animation_controllers/": handle_rpac,
+    "animations/": handle_rp_anim,
+    "entity/": handle_rp_entity,
+    "fogs/": handle_fog,
+    "particles/": handle_particle,
+    "sounds/sound_definitions.json": handle_sound,
+    "blocks.json": handle_rp_block,
+    "biomes_client.json": handle_biome,
+    "texts/{lang}.lang": handle_lang,
+}
+
+def handle_pack(path: str, dispatcher: Dict[str, Callable]):
+    tables = []
+    for subpath, func in dispatcher.items():
+        subpath = subpath.format(lang=args.pack_lang)
+        target = os.path.join(path, subpath)
+        try:
+            table = func(target)
+        except OSError:
+            pass
+        else:
+            if table is not None:
+                tables.append(table)
+    return IdTable.merge_from(*tables)
+
+handle_bp = partial(handle_pack, dispatcher=BP_DISPATCH)
+handle_rp = partial(handle_pack, dispatcher=RP_DISPATCH)
+
 TYPE2FUNC = {
     "lang": handle_lang,
     "id_table": handle_json_file,
@@ -561,7 +611,9 @@ TYPE2FUNC = {
     "rp_anim": handle_rp_anim,
     "recipe": handle_recipe,
     "ease": handle_ease,
-    "particle": handle_particle
+    "particle": handle_particle,
+    "bp": handle_bp,
+    "rp": handle_rp
 }
 
 try:
