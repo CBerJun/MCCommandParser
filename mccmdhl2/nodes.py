@@ -3351,7 +3351,32 @@ def command():
                     Wildcard(IdRecipe(), wildcard_note="note.recipe.wildcard")
                       .finish(EOL)
                   )
-              )
+              ),
+            version=version_lt((1, 20, 20))
+          )
+          .branch(
+            Keyword("give")
+              .note("note.recipe.give")
+              .branch(
+                Selector()
+                  .branch(
+                    Wildcard(IdRecipe(), wildcard_note="note.recipe.wildcard")
+                      .finish(EOL)
+                  )
+              ),
+            version=version_ge((1, 20, 20))
+          )
+          .branch(
+            Keyword("take")
+              .note("note.recipe.take")
+              .branch(
+                Selector()
+                  .branch(
+                    Wildcard(IdRecipe(), wildcard_note="note.recipe.wildcard")
+                      .finish(EOL)
+                  )
+              ),
+            version=version_ge((1, 20, 20))
           ),
         version=version_ge((1, 20, 10))
       )
