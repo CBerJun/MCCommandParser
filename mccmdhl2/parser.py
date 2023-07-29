@@ -269,7 +269,9 @@ class Node(Generic[_PT]):
         info = []
         info_len = 0
         failures = []
+        got_terminator_failure = False
         while True:
+            is_terminator_failure = False
             try:
                 # Content between `self` and child
                 if prev_node:  # root node does not need this
@@ -278,6 +280,7 @@ class Node(Generic[_PT]):
                         try:
                             reader.argument_finish()
                         except ReaderError:
+                            is_terminator_failure = True
                             raise ExpectationFailure("terminator")
                     if not is_close:
                         reader.skip_spaces()
@@ -304,7 +307,14 @@ class Node(Generic[_PT]):
                     else:
                         parse_res = node._parse(reader)
             except ArgParseFailure as err:
-                failures.append(err)
+                # We only keep 1 terminator expectation failure, since
+                # every branch may raise it. Or you'll get "expecting a
+                # terminator like space or a terminator like space or
+                # ..." by writing "execute if score a b matches ..1a"
+                if (not is_terminator_failure or not got_terminator_failure):
+                    failures.append(err)
+                if is_terminator_failure:
+                    got_terminator_failure = True
                 reader.state_jump(prev_state)
                 info_idx += 1
                 if info_idx >= info_len:
@@ -323,6 +333,7 @@ class Node(Generic[_PT]):
                 prev_state = reader.state_save()
                 prev_node = node
                 node, is_close, is_arg_end = info[0]
+                got_terminator_failure = False
 
     def suggest(self) -> List[Union["IdSuggestion", "Suggestion"]]:
         res = self._suggest()
