@@ -862,9 +862,7 @@ class Pos(CompressedNode):
                   .branch(self.end),
                 is_close=True
               )
-              .branch(
-                self.end, require_arg_end=True
-              )
+              .branch(self.end)
           )
         )
 
@@ -886,9 +884,7 @@ class LocalPos(CompressedNode):
                   .branch(self.end),
                 is_close=True
               )
-              .branch(
-                self.end, require_arg_end=True
-              )
+              .branch(self.end)
           )
         )
 
@@ -932,9 +928,7 @@ class Rotation(CompressedNode):
                   .branch(self.end),
                 is_close=True
               )
-              .branch(
-                self.end, require_arg_end=True
-              )
+              .branch(self.end)
           )
         )
 
