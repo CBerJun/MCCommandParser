@@ -593,12 +593,12 @@ class BlockSpec(CompressedNode):
                   .branch(
                     Char(":")
                       .branch(_value),
-                    version=VersionLt((1, 20, 0))
+                    version=VersionLt((1, 20, 10))
                   )
                   .branch(
                     Char("=")
                       .branch(_value),
-                    version=VersionGe((1, 20, 0))
+                    version=VersionGe((1, 20, 10))
                   )
               )
             )
