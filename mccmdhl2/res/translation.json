@@ -18,8 +18,8 @@
                 "end": "End of entity filters",
                 "separator": "Next entity filter",
                 "arg_names": {
-                    "r": "Min distance",
-                    "rm": "Max distance",
+                    "r": "Max distance",
+                    "rm": "Min distance",
                     "dx": "Length on X axis of position box",
                     "dy": "Length on Y axis of position box",
                     "dz": "Length on Z axis of position box",
