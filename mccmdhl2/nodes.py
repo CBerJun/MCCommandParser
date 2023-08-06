@@ -29,7 +29,7 @@ import re
 from .parser import (
     Node, Empty, Finish, CompressedNode, SubparsingNode,
     ArgParseFailure, ExpectationFailure, SemanticError, BaseError,
-    Font
+    Font, VersionFilter
 )
 from .reader import Reader, ReaderError, DIGITS, TERMINATORS, SIGNS
 from .autocompleter import (
@@ -38,7 +38,7 @@ from .autocompleter import (
 )
 from .marker import FontMark, AutoCompletingMark, Marker
 if TYPE_CHECKING:
-    from .parser import MCVersion, VersionFilter
+    from .parser import MCVersion
     from .autocompleter import IdTable, HandledSuggestion
 
 NAMESPACEDID = frozenset("0123456789:._-abcdefghijklmnopqrstuvwxyz")
@@ -74,10 +74,19 @@ def char_rule(char: str):
         return RULEW_FAILED
     return _rule
 
-def version_ge(version: "MCVersion") -> "VersionFilter":
-    return lambda v: v >= version
-def version_lt(version: "MCVersion") -> "VersionFilter":
-    return lambda v: v < version
+class VersionGe(VersionFilter):
+    def __init__(self, version: "MCVersion"):
+        self.version = version
+
+    def validate(self, version: "MCVersion") -> bool:
+        return version >= self.version
+
+class VersionLt(VersionFilter):
+    def __init__(self, version: "MCVersion"):
+        self.version = version
+
+    def validate(self, version: "MCVersion") -> bool:
+        return version < self.version
 
 def re_word(pat: str, **kwds):
     return re.compile(r'(\b|\s+)(%s)(\b|\s+)' % pat, **kwds)
@@ -584,12 +593,12 @@ class BlockSpec(CompressedNode):
                   .branch(
                     Char(":")
                       .branch(_value),
-                    version=version_lt((1, 20, 0))
+                    version=VersionLt((1, 20, 0))
                   )
                   .branch(
                     Char("=")
                       .branch(_value),
-                    version=version_ge((1, 20, 0))
+                    version=VersionGe((1, 20, 0))
                   )
               )
             )
@@ -619,7 +628,7 @@ class BlockSpec(CompressedNode):
                 Integer()
                   .note("note._block_data")
                   .branch(self.end),
-                version=version_lt((1, 19, 70))
+                version=VersionLt((1, 19, 70))
               )
               # Block state
               .branch(
@@ -636,7 +645,7 @@ class BlockSpec(CompressedNode):
                   .branch(self.end)
               )
               # Above 1.19.80, Block state can be omitted
-              .branch(self.end, version=version_ge((1, 19, 80)))
+              .branch(self.end, version=VersionGe((1, 19, 80)))
           )
         )
         if self.__bs_node:
@@ -644,7 +653,7 @@ class BlockSpec(CompressedNode):
                         # Without version filter, there may be 2
                         # "(Line Finish)" hints when version >=
                         # 1.19.80.
-                        version=version_lt((1, 19, 80)))
+                        version=VersionLt((1, 19, 80)))
 
 class Keyword(Node):
     default_font = Font.keyword
@@ -985,7 +994,7 @@ class GameMode(CompressedNode):
               .font(Font.keyword)
               .note("note._gamemode._number")
               .branch(self.end),
-            version=version_ge((1, 19, 30))
+            version=VersionGe((1, 19, 30))
           )
           .branch(
             Integer()
@@ -993,7 +1002,7 @@ class GameMode(CompressedNode):
               .font(Font.keyword)
               .note("note._gamemode._number")
               .branch(self.end),
-            version=version_lt((1, 19, 30))
+            version=VersionLt((1, 19, 30))
           )
         )
 
@@ -1231,7 +1240,7 @@ class SelectorArg(CompressedNode):
                 .note("note._selector.complex.haspermission.separator"),
               content=self._HasPermissionArg(),
               empty_ok=False
-            ), {"version": version_ge((1, 19, 80))}),
+            ), {"version": VersionGe((1, 19, 80))}),
         ):
             _handle(*args)  # type: ignore
 
@@ -1930,7 +1939,7 @@ def command():
                   .finish(EOL)
               )
           ),
-        version=version_lt((1, 20, 10))
+        version=VersionLt((1, 20, 10))
       )
       .branch(
         Integer()
@@ -1947,7 +1956,7 @@ def command():
                   .finish(EOL)
               )
           ),
-        version=version_ge((1, 20, 10))
+        version=VersionGe((1, 20, 10))
       )
     )
     _camera_rot = (Empty()
@@ -1970,7 +1979,7 @@ def command():
             Pos3D()
               .finish(EOL)
           ),
-        version=version_ge((1, 20, 10))
+        version=VersionGe((1, 20, 10))
       )
     )
     _camera_set_end = (Empty()
@@ -2436,7 +2445,7 @@ def command():
                               )
                           )
                       ),
-                    version=version_lt((1, 20, 10))
+                    version=VersionLt((1, 20, 10))
                   )
                   .branch(
                     Keyword("time")
@@ -2458,7 +2467,7 @@ def command():
                               )
                           )
                       ),
-                    version=version_ge((1, 20, 10))
+                    version=VersionGe((1, 20, 10))
                   )
                   .finish(EOL)
               )
@@ -2484,7 +2493,7 @@ def command():
                   )
               )
           ),
-        version=version_ge((1, 20, 0))
+        version=VersionGe((1, 20, 0))
       )
       .branch(
         CommandName("camerashake")
@@ -2737,7 +2746,7 @@ def command():
         CommandName("execute")
           .branch(
             _execute,
-            version=version_ge((1, 19, 50))
+            version=VersionGe((1, 19, 50))
           )
           .branch(
             Selector()
@@ -2764,7 +2773,7 @@ def command():
                       )
                   )
               ),
-            version=version_lt((1, 19, 50))
+            version=VersionLt((1, 19, 50))
           )
       )
       .branch(
@@ -2911,7 +2920,7 @@ def command():
             Keyword("runsetuntilfail")
               .note("note.gametest.runset.root_untilfail")
               .branch(_gametest_runset_end),
-            version=version_ge((1, 19, 80))
+            version=VersionGe((1, 19, 80))
           )
           .branch(
             Keyword("clearall")
@@ -2922,7 +2931,7 @@ def command():
             Keyword("stopall")
               .note("note.gametest.stopall")
               .finish(EOL),
-            version=version_ge((1, 19, 80))
+            version=VersionGe((1, 19, 80))
           )
           .branch(
             Keyword("create")
@@ -3029,7 +3038,7 @@ def command():
                   )
               )
           ),
-        version=version_ge((1, 19, 80))
+        version=VersionGe((1, 19, 80))
       )
       .branch(
         CommandName("kick")
@@ -3060,7 +3069,7 @@ def command():
                 IdBiome()
                   .finish(EOL)
               ),
-            version=version_ge((1, 19, 10))
+            version=VersionGe((1, 19, 10))
           )
           .branch(
             Keyword("structure")
@@ -3074,7 +3083,7 @@ def command():
                   )
                   .finish(EOL)
               ),
-            version=version_ge((1, 19, 10))
+            version=VersionGe((1, 19, 10))
           )
           .branch(
             IdStructure()
@@ -3084,7 +3093,7 @@ def command():
                   .finish(EOL)
               )
               .finish(EOL),
-            version=version_lt((1, 19, 30))
+            version=VersionLt((1, 19, 30))
           )
       )
       .branch(
@@ -3147,9 +3156,9 @@ def command():
                           .branch(_loot_origin)
                       )
                   ),
-                version=version_ge((1, 19, 40))
+                version=VersionGe((1, 19, 40))
               ),
-            version=version_ge((1, 19, 0))
+            version=VersionGe((1, 19, 0))
           )
       )
       .branch(
@@ -3346,7 +3355,7 @@ def command():
                       .finish(EOL)
                   )
               ),
-            version=version_lt((1, 20, 20))
+            version=VersionLt((1, 20, 20))
           )
           .branch(
             Keyword("give")
@@ -3358,7 +3367,7 @@ def command():
                       .finish(EOL)
                   )
               ),
-            version=version_ge((1, 20, 20))
+            version=VersionGe((1, 20, 20))
           )
           .branch(
             Keyword("take")
@@ -3370,9 +3379,9 @@ def command():
                       .finish(EOL)
                   )
               ),
-            version=version_ge((1, 20, 20))
+            version=VersionGe((1, 20, 20))
           ),
-        version=version_ge((1, 20, 10))
+        version=VersionGe((1, 20, 10))
       )
       .branch(
         CommandName("reload")
@@ -3769,7 +3778,7 @@ def command():
                   .note("note.script.watchdog.exportstats")
                   .finish(EOL)
               ),
-            version=version_ge((1, 19, 30))
+            version=VersionGe((1, 19, 30))
           )
       )
       .branch(
@@ -3963,13 +3972,13 @@ def command():
                   .branch(
                     FacingOrYXRot(
                         xrot_optional=EOL(),
-                        facing_kwds={"version": version_ge((1, 19, 80))}
+                        facing_kwds={"version": VersionGe((1, 19, 80))}
                     )
                       .branch(_spawnevt_nametag)
                       .finish(EOL),
-                    version=version_ge((1, 19, 70))
+                    version=VersionGe((1, 19, 70))
                   )
-                  .branch(_spawnevt_nametag, version=version_lt((1, 19, 70)))
+                  .branch(_spawnevt_nametag, version=VersionLt((1, 19, 70)))
                   .finish(EOL)
               )
               .branch(

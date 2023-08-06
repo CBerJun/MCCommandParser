@@ -23,6 +23,7 @@ from typing import (
     Optional, Callable, Generic, Union
 )
 from enum import Enum
+from abc import ABCMeta, abstractmethod
 
 from .ctxutils import ExitStack
 from .reader import Reader, ReaderError
@@ -147,11 +148,27 @@ class SemanticError(BaseError):
             message=super().resolve(translator)
         )
 
+# --- VERSION ---
+MCVersion = Tuple[int, ...]
+class VersionFilter(metaclass=ABCMeta):
+    @abstractmethod
+    def validate(self, version: MCVersion) -> bool:
+        pass
+
+class _AllVersion(VersionFilter):
+    def validate(self, version: MCVersion) -> bool:
+        return True
+
+class VersionAnd(VersionFilter):
+    def __init__(self, *filters: VersionFilter):
+        self.filters = filters
+
+    def validate(self, version: MCVersion) -> bool:
+        return all(f.validate(version) for f in self.filters)
+
 # --- NODE ---
 
 _PT = TypeVar("_PT")  # Parse result type
-MCVersion = Tuple[int, ...]
-VersionFilter = Callable[[MCVersion], bool]
 
 class Node(Generic[_PT]):
     argument_end: bool = True  # Whether argument terminator is required
@@ -176,7 +193,7 @@ class Node(Generic[_PT]):
 
     def branch(self, node: "Node",
                is_close: bool = False, require_arg_end: bool = False,
-               version: VersionFilter = lambda v: True):
+               version: VersionFilter = _AllVersion()):
         if self.frozen:
             raise ValueError("frozen node")
         self.branches.append(node)
@@ -229,7 +246,7 @@ class Node(Generic[_PT]):
         res = self.expanded_branch_info
         def _handle_empty(bbranch_: Node,
                 version_: VersionFilter, vfilter_: VersionFilter):
-            res.append((bbranch_, lambda v: vfilter_(v) and version_(v),
+            res.append((bbranch_, VersionAnd(version_, vfilter_),
                         is_close, is_arg_end))
         for branch, vfilter in zip(self.branches, self.branch_versions):
             is_close = branch in self.close_branches
@@ -348,7 +365,7 @@ class Node(Generic[_PT]):
             raise ValueError("`freeze` node before getting info")
         res = []
         for br, vfilter, is_close, is_arg_end in self.expanded_branch_info:
-            if vfilter(version):
+            if vfilter.validate(version):
                 res.append((br, is_close, is_arg_end))
         if not res:
             raise ValueError("node %r has no branch in version %s"
