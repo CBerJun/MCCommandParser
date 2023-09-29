@@ -456,7 +456,7 @@ def _recurse_dir(path: str, parents: Optional[List[str]] = None) \
 
 def handle_loot(path: str):
     res = []
-    for file in _recurse_dir(path, parents=["loot_tables"]):
+    for file in _recurse_dir(path):
         fn, ext = os.path.splitext(file)
         if ext == ".json":
             res.append(fn)
