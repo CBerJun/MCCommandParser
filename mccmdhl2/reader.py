@@ -1,29 +1,24 @@
 # `mccmdhl2` - Minecraft Bedrock command parser and autocompleter.
 # Copyright (C) 2023  CBerJun<cberjun@163.com>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Basic stuffs for reading a command."""
 
-from typing import NewType, Union, TYPE_CHECKING
+from typing import NewType, Union, Match, Pattern
 from functools import total_ordering
 import re
-if TYPE_CHECKING:
-    try:
-        from re import Pattern as RePattern, Match as ReMatch
-    except ImportError:
-        from _sre import SRE_Pattern as RePattern, SRE_Match as ReMatch
 
 __all__ = [
     "Reader", "ReaderError", "CharLocation",
@@ -98,7 +93,7 @@ class Reader:
             self.pointer += 1
         return res
 
-    def read(self, regex: "RePattern") -> "ReMatch":
+    def read(self, regex: Pattern) -> Match:
         """Read and consume the text that matches given `regex`.
         NOTE The given `regex` cannot allow any `\n` read.
         Returns the match object or raises a `ReaderError` when failed.

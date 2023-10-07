@@ -1,16 +1,16 @@
 # `mccmdhl2` - Minecraft Bedrock command parser and autocompleter.
 # Copyright (C) 2023  CBerJun<cberjun@163.com>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -1151,7 +1151,7 @@ class SelectorArg(CompressedNode):
                         .branch(self.end)
                     )
                 )
-              ) 
+              )
             )
 
     class _HasPermissionArg(CompressedNode):
@@ -1901,7 +1901,7 @@ def CommandName(name: str, *alias: str):
       .note("note.%s.root" % name)
     )
 
-def command():
+def Command():
     command_root = Empty()
 
     # Common
@@ -4291,10 +4291,10 @@ def command():
       )
     )
 
-def mcfuncline():
+def MCFuncLine():
     return (Empty()
       .branch(
-        command()
+        Command()
       )
       .branch(
         EOL()

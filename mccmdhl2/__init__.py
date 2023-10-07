@@ -1,16 +1,16 @@
 # `mccmdhl2` - Minecraft Bedrock command parser and autocompleter.
 # Copyright (C) 2023  CBerJun<cberjun@163.com>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -30,7 +30,7 @@ from .reader import *
 from .marker import *
 from .parser import *
 from .translator import *
-from .nodes import command, mcfuncline
+from .nodes import Command, MCFuncLine
 from .autocompleter import *
 if _TYPE_CHECKING:
     from .parser import MCVersion
@@ -41,7 +41,7 @@ def get_default_tree() -> Node:
     """Load and get the default tree used by parser."""
     global _DEFAULT_TREE
     if _DEFAULT_TREE is None:
-        _DEFAULT_TREE = mcfuncline()
+        _DEFAULT_TREE = MCFuncLine()
     return _DEFAULT_TREE
 
 def load_resources():
