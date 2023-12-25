@@ -76,7 +76,6 @@ class Popup:
         # Create widget
         self.toplevel = tkinter.Toplevel(self.text)
         self.toplevel.wm_overrideredirect(True)  # No border
-        self.toplevel.wm_transient(self.text)  # type: ignore # Make it float
         self.scrollbar = tkinter.Scrollbar(
             self.toplevel, orient=tkinter.VERTICAL)
         self.listbox = tkinter.Listbox(self.toplevel,
@@ -87,7 +86,7 @@ class Popup:
         self.label = tkinter.Label(self.toplevel,
             font=self.FONT,
             wraplength=self.LABEL_WRAPLENGTH)
-        self.toplevel.lift(self.text)
+        self.toplevel.lift()
         # Pack widgets
         self.label.pack(side="top")
         self.scrollbar.pack(side="right", fill="y")
@@ -221,15 +220,18 @@ class Popup:
         self.toplevel.update()  # Trigger event immediately
         self.id_hidep = self.toplevel.bind(
             self.POPUP_HIDE_EVENT, self.on_hide)
+        # After text gain focus, toplevel would go under it, so:
+        self.toplevel.lift()
 
     def on_try_hide(self, event: tkinter.Event):
         """Tkinter callback: When text receive FocusOut."""
         if self.toplevel is None:
             return
-        # Maybe text's focus is out just because user select the
-        # listbox and focus falls on toplevel? So use `focus_get`
-        # to make sure that we only hide pop-up when this whole app
-        # does not have focus.
+        # We want to hide popup only if the whole application does not
+        # have focus. Now we only know text does not, but not the other
+        # parts of the application (e.g. popup), so we use `focus_get`
+        # to check.
+        self.text.update()  # make sure focus is updated
         if not self.text.focus_get():
             self.destroy()
 
@@ -370,12 +372,14 @@ class MCCmdText(tkinter.Text):
     @staticmethod
     def linecol_from_index(index: str) -> Tuple[int, int]:
         """Get line number & column from tkinter index."""
-        return tuple(map(int, index.split(".")))
+        l = index.split(".")
+        assert len(l) == 2
+        return int(l[0]), int(l[1])
 
     @staticmethod
     def line_from_index(index: str) -> int:
         """Get line number from `Text` widget index "X.X"."""
-        return int(index.split(".")[0])
+        return int(index.partition(".")[0])
 
     def _charloc_to_index(self, location: "CharLocation") -> str:
         return "%d.%d" % (location.line + self.line_diff,
