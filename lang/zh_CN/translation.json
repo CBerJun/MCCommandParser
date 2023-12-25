@@ -905,7 +905,8 @@
                 "out_of_range": "数字超出范围: {min}~{max}",
                 "cant_be": "数字不能是{num}",
                 "must_be": "数字必须是{nums}中的一个"
-            }
+            },
+            "json_str": "JSON字符串: {suberr}"
         }
     },
     "autocomp": {

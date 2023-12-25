@@ -905,7 +905,8 @@
                 "out_of_range": "Number out of range {min}~{max}",
                 "cant_be": "Number can't be {num}",
                 "must_be": "Number must be one of {nums}"
-            }
+            },
+            "json_str": "JSON string: {suberr}"
         }
     },
     "autocomp": {

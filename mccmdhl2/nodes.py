@@ -28,7 +28,8 @@ import re
 
 from .parser import (
     Node, Empty, Finish, CompressedNode, SubparsingNode,
-    ArgParseFailure, ExpectationFailure, SemanticError, BaseError,
+    ArgParseFailure, ExpectationFailure,
+    BaseError, SemanticError, SyntaxError_,
     Font, VersionFilter
 )
 from .reader import Reader, ReaderError, DIGITS, TERMINATORS, SIGNS
@@ -36,9 +37,11 @@ from .autocompleter import (
     Suggestion, IdSuggestion,
     str_find_rule, RULEW_OTHER, RULEW_FAILED, RULEW_STR_FIND, RuleWeight
 )
-from .marker import FontMark, AutoCompletingMark, Marker
+from .marker import FontMark, AutoCompletingMark, CheckerMark, Marker
 if TYPE_CHECKING:
+    from .reader import CharLocation
     from .parser import MCVersion
+    from .translator import Translator
     from .autocompleter import IdTable, HandledSuggestion
 
 NAMESPACEDID = frozenset("0123456789:._-abcdefghijklmnopqrstuvwxyz")
@@ -512,8 +515,8 @@ class _DynamicIdSuggestion(IdSuggestion):
                     res.extend(s.resolve(id_table))
             return res
         else:
-            val = self.__map_handler(val)
             assert isinstance(val, (list, dict))
+            val = self.__map_handler(val)
             if isinstance(val, list):
                 val = dict.fromkeys(val)
             def _map(arg):
@@ -564,7 +567,7 @@ class BlockSpec(CompressedNode):
                 res: List[str] = []
                 for k in ("int", "bool", "str"):
                     if k in map_:
-                        res.extend('"%s"' % s for s in map_[k].keys())
+                        res.extend(['"%s"' % s for s in map_[k].keys()])
                 return res
             _value = (Empty()
               .branch(
@@ -1385,6 +1388,15 @@ class _RawtextTranslate(RegexNode):
         with marker.add_ac_mark(node=self):  # type: ignore
             marker.reader.read_until_eol()
 
+class JsonStrSemanticError(SemanticError):
+    def __init__(self, suberr: BaseError):
+        super().__init__("error.semantic.json_str")
+        self.__suberr = suberr
+
+    def resolve(self, translator: "Translator"):
+        self.kwds["suberr"] = self.__suberr.resolve(translator)
+        return super().resolve(translator)
+
 class _JsonString(SubparsingNode):
     argument_end = False
 
@@ -1514,20 +1526,34 @@ class _JsonString(SubparsingNode):
             p2, pos_end, self.__ac_node, version=marker.version
         ))  # Leave body part of string for sub-node
         tree = self.__get_tree()
-        failed = tree is None
         if tree is not None:
+            def _conv_loc(loc: "CharLocation"):
+                return p1.offset(col_map.index(loc.column - 1))
             def _get_loc(m):
-                idx1 = col_map.index(m.begin.column - 1)
-                idx2 = col_map.index(m.end.column - 1)
-                return (p1.offset(idx1), p1.offset(idx2))
+                return (_conv_loc(m.begin), _conv_loc(m.end))
             submarker = Marker(Reader(string), version=marker.version)
             tree2 = Empty().branch(tree.finish(EOL))
             tree2.freeze()
             try:
                 tree2.parse(submarker)
                 submarker.trigger_checkers()
-            except BaseError:
-                failed = True
+            except BaseError as err:
+                # Fix error location and re-raise the error in the
+                # checker.
+                if isinstance(err, SyntaxError_):
+                    err_range = (_conv_loc(err.location), p2)
+                elif isinstance(err, SemanticError):
+                    err_range = (
+                        _conv_loc(err.range[0]), _conv_loc(err.range[1])
+                    )
+                else:
+                    raise TypeError("Unexpected error type %r" % type(err))
+                err_save = err
+                def _raise(res):
+                    raise JsonStrSemanticError(err_save)
+                checker_mark = CheckerMark(*err_range, [_raise])
+                checker_mark.set_result(None)
+                marker.checker_marks.append(checker_mark)
             else:
                 for mark in submarker.font_marks:
                     marker.font_marks.append(
@@ -1537,7 +1563,7 @@ class _JsonString(SubparsingNode):
                     marker.ac_marks.append(
                         AutoCompletingMark(*_get_loc(mark), mark.get_unit)
                     )
-        if failed:
+        else:  # No information for parsing the string
             marker.font_marks.append(FontMark(p1, p2, Font.string))
         return string
 
@@ -1605,7 +1631,6 @@ class Json(SubparsingNode):
         # Since we do `_end_subparse(node)` directly, node should be
         # a single node and should not be a embedded tree.
         _end_subparse(node)
-        tree = Empty().branch(node)
         return _node_subparse(self, node, self.marker)
 
     def __float(self):
