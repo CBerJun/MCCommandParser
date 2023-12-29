@@ -232,7 +232,12 @@ class Popup:
         # parts of the application (e.g. popup), so we use `focus_get`
         # to check.
         self.text.update()  # make sure focus is updated
-        if not self.text.focus_get():
+        try:
+            do_destroy = self.text.focus_get() is None
+        except KeyError:
+            # Workaround for https://bugs.python.org/issue18686
+            do_destroy = False
+        if do_destroy:
             self.destroy()
 
     def on_hide(self, event: tkinter.Event):
