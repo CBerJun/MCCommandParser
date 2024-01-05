@@ -122,7 +122,7 @@ class MCCmdParser:
             raise RuntimeError("Source must be parsed completely before "
                 "suggesting")
         if id_table:
-            table = IdTable.merge_from(id_table, BASE_ID_TABLE)
+            table = IdTable.merge_from(BASE_ID_TABLE, id_table)
         else:
             table = BASE_ID_TABLE
         location = self.reader.linecol_to_location(line, column)
