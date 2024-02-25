@@ -440,6 +440,9 @@ class IdAbility(Word):
 class IdParticle(NamespacedId):
     def __init__(self):
         super().__init__("particle")
+class IdHudElement(Word):
+    def _suggest(self):
+        return [IdSuggestion("hud_element")]
 
 def ItemData(is_test: bool):
     return (Integer()
@@ -3014,6 +3017,24 @@ def Command():
                   .finish(EOL)
               )
           )
+      )
+      .branch(
+        CommandName("hud")
+          .branch(
+            Selector()
+              .branch(
+                NotedEnumerate("hide", "reset", note_template="note.hud.%s")
+                  .branch(
+                    IdHudElement()
+                      .finish(EOL)
+                  )
+                  .branch(
+                    EOL()
+                      .note("note.hud.all")
+                  )
+              )
+          ),
+        version=VersionGe((1, 20, 60))
       )
       .branch(
         CommandName("immutableworld")

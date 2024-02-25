@@ -196,5 +196,19 @@
         "spawnRadius": "[I] Spawn radius of world spawn point",
         "tntExplodes": "[B] TNT explodes enabled",
         "playersSleepingPercentage": "[I] What percentage of players in Overworld must sleep to skip night"
+    },
+    "hud_element": {
+        "air_bubbles": "Oxygen bar",
+        "all": "All elements",
+        "armor": "Armor Bar",
+        "crosshair": "Crosshair",
+        "health": "Health Bar",
+        "horse_health": "Mount's Health Bar",
+        "hotbar": "Hotbar",
+        "hunger": "Hunger Bar",
+        "paperdoll": "Paper Doll",
+        "progress_bar": "Experience Bar",
+        "tooltips": "Unknown",
+        "touch_controls": "Touch Controls"
     }
 }

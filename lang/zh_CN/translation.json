@@ -438,6 +438,12 @@
             "root": "给予玩家物品",
             "amount": "物品数量"
         },
+        "hud": {
+            "root": "设定玩家 HUD 上元素的可见性",
+            "hide": "隐藏",
+            "reset": "可见",
+            "all": "应用于所有 HUD 元素"
+        },
         "immutableworld": {
             "root": "[EDU] 管理世界是否能被修改",
             "query": "查询世界是否是无法修改的",
@@ -952,7 +958,8 @@
             "camera_preset": "[摄像机预设]",
             "ease_type": "[平滑函数]",
             "ability": "[能力]",
-            "particle": "[粒子效果]"
+            "particle": "[粒子效果]",
+            "hud_element": "[HUD元素]"
         },
         "dynamic_id_fails": "(无法在ID表找到)"
     },

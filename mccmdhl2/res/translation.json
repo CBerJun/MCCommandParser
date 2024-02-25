@@ -438,6 +438,12 @@
             "root": "Give players items",
             "amount": "Amount of item"
         },
+        "hud": {
+            "root": "Change the visibility of a HUD element",
+            "hide": "Hide",
+            "reset": "Make visible again",
+            "all": "Apply to all HUD elements"
+        },
         "immutableworld": {
             "root": "[EDU] Manage whether world can be modified",
             "query": "Inquire about whether the world is immutable",
@@ -952,7 +958,8 @@
             "camera_preset": "[Camera Preset]",
             "ease_type": "[Easing Function]",
             "ability": "[Ability]",
-            "particle": "[Particle]"
+            "particle": "[Particle]",
+            "hud_element": "[HUD Element]"
         },
         "dynamic_id_fails": "(Can't find in ID table)"
     },

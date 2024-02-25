@@ -196,5 +196,19 @@
         "spawnRadius": "[I] 世界重生点的重生半径",
         "tntExplodes": "[B] 允许TNT爆炸",
         "playersSleepingPercentage": "[I] 主世界玩家中睡眠的占比(百分数)达到此值可跳过夜晚"
+    },
+    "hud_element": {
+        "air_bubbles": "氧气条",
+        "all": "所有元素",
+        "armor": "护甲值",
+        "crosshair": "十字准星",
+        "health": "生命条",
+        "horse_health": "骑乘生物生命条",
+        "hotbar": "快捷栏",
+        "hunger": "饥饿条",
+        "paperdoll": "纸娃娃",
+        "progress_bar": "经验条",
+        "tooltips": "未知",
+        "touch_controls": "触控控制"
     }
 }
