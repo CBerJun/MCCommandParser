@@ -1235,7 +1235,7 @@ class SelectorArg(CompressedNode):
             ("hasitem", self._HasItem()),
             ("l", Integer().ranged(min=0)),
             ("lm", Integer().ranged(min=0)),
-            ("m", GameMode(allow_5=False)),
+            ("m", Invertable(GameMode(allow_5=False))),
             ("c", Integer().none_of(0)),
             ("haspermission", Series(
               begin=Char("{")
