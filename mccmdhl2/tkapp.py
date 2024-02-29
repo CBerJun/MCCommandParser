@@ -266,7 +266,7 @@ class Popup:
         try:
             res = self._common_keys(keysym)
         except ValueError:
-            res = "break"
+            res = None
             if keysym in ("Up", "Down", "Home", "End"):
                 cur = self._get_listbox_selection()
                 if keysym == "Up":
@@ -281,8 +281,10 @@ class Popup:
                 self.listbox.select_clear(cur)
                 self.listbox.select_set(new)
                 self.listbox.see(new)
-            else:
-                res = None
+                res = "break"
+            elif keysym in ("Left", "Right"):
+                # When the cursor moves the popup should be hidden.
+                self.destroy()
         # When returning None, `Text` will handle this key.
         return res
 
