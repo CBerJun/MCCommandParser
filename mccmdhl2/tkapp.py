@@ -42,8 +42,6 @@ class Popup:
     """The pop-up window used by `MCCmdText`."""
     KEYPRESS_EVENT = "<Key>"
     POPUP_HIDE_EVENT = "<FocusOut>"
-    TEXT_TRY_HIDE_EVENT = "<FocusOut>"
-    TEXT_HIDE_EVENT = "<Button-1>"
     LISTBOX_CONFIRM_EVENT = "<B1-Double-ButtonRelease>"
 
     POPUP_HIDE_KEYS = ("Escape",)
@@ -66,6 +64,8 @@ class Popup:
         self.suggestions: List["HandledSuggestion"] = []
         # and its length (update with it)
         self.SUGG_LEN = 0
+        # See method `_focus_back`:
+        self.ignore_focusout = False
 
     def create(self):
         """Create the pop-up window, without positioning it to the
@@ -92,18 +92,15 @@ class Popup:
         self.scrollbar.pack(side="right", fill="y")
         self.listbox.pack(side="left", fill="both", expand=True)
         # Bind events
-        self.id_hidep = self.toplevel.bind(
-            self.POPUP_HIDE_EVENT, self.on_hide)
-        self.id_hidet = self.text.bind(
-            self.TEXT_HIDE_EVENT, self.on_hide)
-        self.id_tryhide = self.text.bind(
-            self.TEXT_TRY_HIDE_EVENT, self.on_try_hide)
-        self.id_keyp = self.toplevel.bind(
-            self.KEYPRESS_EVENT, self.on_toplevel_key)
-        self.id_keyt = self.text.bind(
-            self.KEYPRESS_EVENT, self.on_text_key)
-        self.id_lb = self.listbox.bind(
-            self.LISTBOX_CONFIRM_EVENT, self.on_listbox_confirm)
+        self.popup_focusout_bindid = self.toplevel.bind(
+            self.POPUP_HIDE_EVENT, self.on_focusout
+        )
+        self.popup_key_bindid = self.toplevel.bind(
+            self.KEYPRESS_EVENT, self.on_toplevel_key
+        )
+        self.listbox_bindid = self.listbox.bind(
+            self.LISTBOX_CONFIRM_EVENT, self.on_listbox_confirm
+        )
 
     def _get_listbox_selection(self) -> int:
         assert self.listbox
@@ -146,11 +143,9 @@ class Popup:
         # Re-focus on `Text`
         self.text.focus_set()
         # Unbind events
-        self.toplevel.unbind(self.POPUP_HIDE_EVENT, self.id_hidep)
-        self.text.unbind(self.TEXT_TRY_HIDE_EVENT, self.id_tryhide)
-        self.text.unbind(self.TEXT_HIDE_EVENT, self.id_hidet)
-        self.text.unbind(self.KEYPRESS_EVENT, self.id_keyt)
-        self.listbox.unbind(self.LISTBOX_CONFIRM_EVENT, self.id_lb)
+        self.toplevel.unbind(self.POPUP_HIDE_EVENT, self.popup_focusout_bindid)
+        self.toplevel.unbind(self.KEYPRESS_EVENT, self.popup_key_bindid)
+        self.listbox.unbind(self.LISTBOX_CONFIRM_EVENT, self.listbox_bindid)
         # Destroy
         self.scrollbar.destroy()
         self.listbox.destroy()
@@ -158,9 +153,8 @@ class Popup:
         self.toplevel.destroy()
         self.scrollbar = self.listbox = self.label = self.toplevel = None
 
-    def update_content(self,
-               suggestions: List["HandledSuggestion"],
-               error: str = ""):
+    def update_content(self, suggestions: List["HandledSuggestion"],
+                       error: str = ""):
         """Show the pop-up & update content on it."""
         if not self.toplevel:
             self.create()
@@ -216,15 +210,14 @@ class Popup:
         # the toplevel, so we unbind this event temporarily.
         if not self.toplevel:
             return
-        self.toplevel.unbind(self.POPUP_HIDE_EVENT, self.id_hidep)
+        self.ignore_focusout = True
         self.toplevel.update()  # Trigger event immediately
-        self.id_hidep = self.toplevel.bind(
-            self.POPUP_HIDE_EVENT, self.on_hide)
+        self.ignore_focusout = False
         # After text gain focus, toplevel would go under it, so:
         self.toplevel.lift()
 
-    def on_try_hide(self, event: tkinter.Event):
-        """Tkinter callback: When text receive FocusOut."""
+    def try_hide(self):
+        """Callback: When the text receives FocusOut."""
         if self.toplevel is None:
             return
         # We want to hide popup only if the whole application does not
@@ -240,8 +233,10 @@ class Popup:
         if do_destroy:
             self.destroy()
 
-    def on_hide(self, event: tkinter.Event):
-        """Tkinter callback: When toplevel should be hidden."""
+    def on_focusout(self, event: tkinter.Event):
+        """Tkinter callback: When this popup loses focus."""
+        if self.ignore_focusout:
+            return
         self.destroy()
 
     def _common_keys(self, keysym: str):
@@ -375,6 +370,10 @@ class MCCmdText(tkinter.Text):
         self.update_font()
         # Initial update
         self.update_text(1, popup=False)
+        # Bind events
+        self.bind("<Button-1>", self.on_click, add="+")
+        self.bind("<FocusOut>", self.on_focusout, add="+")
+        self.bind("<Key>", self.popup.on_text_key, add="+")
 
     @staticmethod
     def linecol_from_index(index: str) -> Tuple[int, int]:
@@ -496,3 +495,11 @@ class MCCmdText(tkinter.Text):
                 self._charloc_to_index(mark.begin),
                 self._charloc_to_index(mark.end)
             )
+
+    def on_click(self, event: tkinter.Event):
+        """Tkinter callback: When this is clicked."""
+        self.popup.destroy()
+
+    def on_focusout(self, event: tkinter.Event):
+        """Tkinter callback: When this loses focus."""
+        self.popup.try_hide()
