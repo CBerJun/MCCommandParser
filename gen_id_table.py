@@ -24,10 +24,11 @@ import os
 import re
 import sys
 import json
+import glob
 import codecs
 import argparse
 from mccmdhl2 import IdTable
-from typing import List, Optional, Dict, Callable
+from typing import Dict, Callable
 from functools import partial
 
 JSON_TOKENIZE = re.compile(
@@ -43,6 +44,7 @@ JSON_TOKENIZE = re.compile(
     )
     """, flags=re.DOTALL | re.VERBOSE
 )
+MISSING = object()  # Sentinel
 
 def action_input(input_type: str, vtype: str = "file"):
     class _Action(argparse.Action):
@@ -167,8 +169,13 @@ argparser.add_argument(
 )
 argparser.add_argument(
     "-C", "--encoding", metavar="CODEC",
-    help="specify file encoding",
+    help="specify file encoding; see also --out-encoding",
     default="utf-8"
+)
+argparser.add_argument(
+    "--out-encoding", metavar="CODEC",
+    help="specify output file encoding; default to --encoding",
+    default=MISSING
 )
 argparser.add_argument(
     "-J", "--strict-json", action="store_true",
@@ -177,8 +184,8 @@ argparser.add_argument(
 args = argparser.parse_args()
 
 # Util
-def open_(*args_, **kwds):
-    return open(*args_, **kwds, encoding=args.encoding)
+def open_r(file, **kwds):
+    return open(file, "r", **kwds, encoding=args.encoding)
 
 def json_loads(src: str):
     if not args.strict_json:
@@ -191,7 +198,7 @@ def json_load(file):
     return json_loads(file.read())
 
 def read_json(path: str):
-    with open_(path, "r") as file:
+    with open_r(path) as file:
         try:
             return json_load(file)
         except json.JSONDecodeError:
@@ -202,7 +209,7 @@ def handle_lang(path: str):
     res = {k: {} for k in (
         "item", "entity", "block"
     )}
-    with open_(path, "r") as file:
+    with open_r(path) as file:
         while True:
             line = file.readline()
             if not line:
@@ -441,27 +448,13 @@ def handle_sound(path: str):
                    and val["category"] == "music"))
     })
 
-def _recurse_dir(path: str, parents: Optional[List[str]] = None) \
-        -> List[str]:
-    if parents is None:
-        parents = []
-    res = []
-    for n in os.listdir(path):
-        fp = os.path.join(path, n)
-        if os.path.isdir(fp):
-            res.extend(_recurse_dir(fp, parents + [n]))
-        else:
-            res.append("/".join(parents + [n]))
-    return res
-
 def handle_loot(path: str):
-    res = []
-    for file in _recurse_dir(path):
-        fn, ext = os.path.splitext(file)
-        if ext == ".json":
-            res.append(fn)
+    paths = (
+        '"%s"' % path.replace('\\', '/')[:-5]  # strip ".json"
+        for path in glob.iglob("**/*.json", recursive=True, root_dir=path)
+    )
     print("Handled loot tables %s" % path)
-    return IdTable({"loot_table": dict.fromkeys('"%s"' % s for s in res)})
+    return IdTable({"loot_table": dict.fromkeys(paths)})
 
 def handle_rpac(path: str):
     all_states = set()
@@ -620,6 +613,14 @@ try:
     codecs.lookup(args.encoding)
 except LookupError:
     argparser.error("invalid codec %r" % args.encoding)
+out_encoding = args.out_encoding
+if out_encoding is MISSING:
+    out_encoding = args.encoding
+else:
+    try:
+        codecs.lookup(out_encoding)
+    except LookupError:
+        argparser.error("invalid output codec %r" % out_encoding)
 if not hasattr(args, "input_list"):
     argparser.error("no input file")
 tables = []
@@ -630,7 +631,7 @@ for type_, value in args.input_list:
 
 result = IdTable.merge_from(*tables)
 try:
-    result.dump(args.out, encoding=args.encoding)
+    result.dump(args.out, encoding=out_encoding)
 except OSError:
     argparser.error("error when dumping result: %s: %s"
                     % sys.exc_info()[:2])
