@@ -22,18 +22,24 @@ import re
 
 __all__ = [
     "Reader", "ReaderError", "CharLocation",
-    "TERMINATORS", "DIGITS", "SIGNS"
+    "TERMINATORS", "DIGITS", "SIGNS", "PATH_TERMINATORS"
 ]
 
 _TERMINATOR_STR = " ,@~^/$&\"'!#%+*=[{]}\\|<>`\n"
 _TERMINATOR_RE = r' ,@~\^/\$&"!#%\+\*=\[\{\]\}\\\|<>`\n' + "'"
+# File path terminators, test result in MC 26.2 (yes, '?' is allowed in
+# file path even if function name cannot contain that):
+_PATH_TERMINATOR_STR = '#][<{`!>*\'^%}~@;+|:"\\,& $=\n'
+_PATH_TERMINATOR_RE = r'#\]\[<\{`!>\*\^%\}~@;\+\|:"\\,& \$=\n' + "'"
 
 TERMINATORS = frozenset(_TERMINATOR_STR)
+PATH_TERMINATORS = frozenset(_PATH_TERMINATOR_STR)
 DIGITS = frozenset("0123456789")
 SIGNS = frozenset("+-")
 
 PAT_INT = re.compile(r"[+-]?\d+")
 PAT_WORD = re.compile(r".*?(?=[%s])" % _TERMINATOR_RE)
+PAT_PATH = re.compile(r".*?(?=[%s])" % _PATH_TERMINATOR_RE)
 PAT_TILLEOF = re.compile(r".*$")
 PAT_FLOAT = re.compile(r"[+-]?\d+(\.(\d+)?)?")
 PAT_FLOAT_NOINT = re.compile(r"[+-]?\.\d+")
@@ -123,6 +129,22 @@ class Reader:
             # be the terminator
             m = self.read(PAT_TILLEOF)
         return m.group()
+
+    def read_unquoted_path(self) -> str:
+        # See https://minecraft.wiki/w/Argument_types#CommandFilePath
+        # However this only considers unquoted paths. In addition to
+        # the characters allowed, an unquoted path cannot start with
+        # '/', end with '/', or contain '//' (tested in MC 26.2).
+        m = PAT_PATH.match(self.src, pos=self.pointer)
+        if m is None:  # We reached EOF
+            m = self.read(PAT_TILLEOF)
+        path = m.group()
+        if path.startswith('/') or path.endswith('/') or '//' in path:
+            return ""
+        length = m.end() - self.pointer
+        self.pointer += length
+        self.current_column += length
+        return path
 
     def read_int(self) -> int:
         m = self.read(PAT_INT)

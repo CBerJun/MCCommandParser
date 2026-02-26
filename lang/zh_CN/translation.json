@@ -12,7 +12,8 @@
                     "a": "所有玩家",
                     "p": "最近的玩家",
                     "r": "随机玩家",
-                    "initiator": "打开对话者(仅适用于NPC)"
+                    "initiator": "打开对话者(仅适用于NPC)",
+                    "n": "最近的实体"
                 },
                 "begin": "增加实体过滤条件",
                 "end": "实体过滤条件结束",
@@ -40,7 +41,8 @@
                     "lm": "最小经验等级",
                     "m": "玩家游戏模式",
                     "c": "选中的最大实体数量",
-                    "haspermission": "输入权限"
+                    "haspermission": "输入权限",
+                    "has_property": "实体属性"
                 },
                 "equals": "输入过滤参数值",
                 "scores": {
@@ -73,6 +75,12 @@
                     "begin": "输入权限过滤开始",
                     "end": "输入权限过滤结束",
                     "separator": "下一项输入权限过滤"
+                },
+                "has_property": {
+                    "begin": "实体属性过滤开始",
+                    "end": "实体属性过滤结束",
+                    "separator": "下一项实体属性过滤",
+                    "property": "测试实体是否拥有某项属性"
                 }
             }
         },
@@ -215,6 +223,21 @@
             },
             "set": "修改玩家是否拥有给定能力"
         },
+        "aimassist": {
+            "root": "管理玩家的瞄准辅助",
+            "clear": "清除瞄准辅助",
+            "set": {
+                "root": "设定瞄准辅助",
+                "x_angle": "X 轴水平角度 (默认 50)",
+                "y_angle": "Y 轴垂直角度 (默认 50)",
+                "max_distance": "目标最大距离 (方块)",
+                "preset": "瞄准辅助预设",
+                "modes": {
+                    "angle": "角度 (默认)",
+                    "distance": "距离"
+                }
+            }
+        },
         "alwaysday": {
             "root": "启用/关闭“终为白日”",
             "lock": "锁定白天",
@@ -246,6 +269,42 @@
                 "ease": {
                     "root": "设定摄像机变换时的平滑函数",
                     "time": "变换的持续时间 (秒)"
+                },
+                "view_offset": {
+                    "root": "follow_orbit 参数: 相机视角的偏移量",
+                    "x": "X 偏移",
+                    "y": "Y 偏移"
+                },
+                "entity_offset": {
+                    "root": "follow_orbit 参数: 相机视角相对于实体的偏移量",
+                    "x": "X 偏移",
+                    "y": "Y 偏移",
+                    "z": "Z 偏移"
+                }
+            },
+            "attach_to_entity": "将相机固定于在某个实体上",
+            "detach_from_entity": "取消相机实体固定",
+            "fov_clear": "取消视场角 (FOV) 效果",
+            "fov_set": {
+                "root": "设定视场角 (FOV) 效果",
+                "fov_value": "视场角 (FOV) (有效范围: 30~110)"
+            },
+            "fov": {
+                "ease_time": "视场角 (FOV) 平滑过渡时间",
+                "ease_type": "视场角 (FOV) 平滑过渡函数"
+            },
+            "play_spline": {
+                "root": "从行为包中播放样条",
+                "name": "样条 ID"
+            },
+            "remove_target": "取消相机实体聚焦",
+            "target_entity": {
+                "root": "将相机聚焦于某个实体上",
+                "target_center_offset": {
+                    "root": "相机相对于聚焦实体中心的偏移量",
+                    "x": "X 偏移",
+                    "y": "Y 偏移",
+                    "z": "Z 偏移"
                 }
             }
         },
@@ -287,6 +346,11 @@
             "out": "与当前服务器断开连接",
             "address": "服务器地址"
         },
+        "controlscheme": {
+            "root": "管理玩家相机预设的控制方案",
+            "clear": "清除控制方案",
+            "set": "设定控制方案"
+        },
         "damage": {
             "root": "对实体造成伤害",
             "amount": "伤害量 (1 = 半颗心)",
@@ -317,8 +381,12 @@
         },
         "effect": {
             "root": "管理状态效果 (buff)",
-            "clear": "清除玩家全部的效果",
+            "clear": {
+                "root": "清除效果",
+                "all": "清除玩家全部的效果"
+            },
             "seconds": "时长 (秒为单位; 对于3个隐藏效果刻为单位)",
+            "infinite": "无限时长",
             "amplifier": "增强值 (等级-1)",
             "hide_particles": "是否隐藏药水粒子效果"
         },
@@ -434,6 +502,15 @@
             },
             "pos": "找到200格半径内最近的结构方块"
         },
+        "gametips": {
+            "root": "管理此设备上的游戏提示",
+            "status": {
+                "enable": "开启",
+                "disable": "关闭",
+                "e": "开启",
+                "d": "关闭"
+            }
+        },
         "give": {
             "root": "给予玩家物品",
             "amount": "物品数量"
@@ -531,6 +608,33 @@
         "particle": {
             "root": "生成粒子效果"
         },
+        "place": {
+            "root": "放置结构和地物",
+            "feature": {
+                "root": "放置地物",
+                "feature": "地物 ID"
+            },
+            "featurerule": {
+                "root": "根据地物规则放置地物",
+                "feature_rule": "地物规则 ID"
+            },
+            "jigsaw": {
+                "root": "放置拼图结构/结构池",
+                "max_depth": "拼图方块展开的最大深度"
+            },
+            "structure": {
+                "root": "放置结构",
+                "ignore_start_height": "忽略结构的起始高度规则"
+            },
+            "opts": {
+                "keep_jigsaws": "保留拼图方块",
+                "include_entities": "加载实体",
+                "liquid": {
+                    "ignore_waterlogging": "允许含水",
+                    "apply_waterlogging": "忽略含水"
+                }
+            }
+        },
         "playanimation": {
             "root": "播放实体动画",
             "blend": "淡出时长 (秒)",
@@ -549,7 +653,8 @@
             "wildcard": "所有配方"
         },
         "reload": {
-            "root": "重新加载行为包内的函数和脚本文件"
+            "root": "重新加载行为包内的函数和脚本文件",
+            "all": "同时退出世界并重进"
         },
         "replaceitem": {
             "root": "将给定物品槽位替换为给定物品",
@@ -589,9 +694,34 @@
             "root": "延迟执行一个函数",
             "area": {
                 "root": "当给定区域被加载时执行函数",
-                "tickingarea": "当给定名称的常加载区域被添加时执行函数"
+                "add": {
+                    "root": "添加一个区域加载时执行计划",
+                    "tickingarea": "当给定名称的常加载区域被添加时执行函数"
+                },
+                "clear": {
+                    "root": "移除一个区域加载时执行计划",
+                    "function": "根据函数路径移除",
+                    "tickingarea": "根据常加载区块移除"
+                }
             },
-            "function": "函数文件路径"
+            "clear": "清除执行计划",
+            "delay": {
+                "root": "在一段固定时间后执行函数",
+                "duration": "等待的时间",
+                "units": {
+                    "d": "天 (24000 刻)",
+                    "s": "秒 (20 刻)",
+                    "t": "刻 (默认)"
+                },
+                "opts": {
+                    "append": "添加新的计划",
+                    "replace": "替换该函数已有的计划 (默认)"
+                },
+                "add": "添加一个延迟执行计划",
+                "clear": "移除一个延迟执行计划"
+            },
+            "run_function": "要计划执行的函数文件路径",
+            "clear_function": "要取消执行计划的函数文件路径"
         },
         "scoreboard": {
             "root": "与计分板系统交互",
@@ -710,7 +840,8 @@
         "spreadplayers": {
             "root": "将实体散布到区域内的随机位置",
             "distance": "任意2个目标之间的最小距离",
-            "max_range": "正方形散布区域边长的一半"
+            "max_range": "正方形散布区域边长的一半",
+            "max_height": "终点的最大 Y 坐标"
         },
         "stopsound": {
             "root": "停止播放声音"
@@ -897,7 +1028,9 @@
                 "chars": "{chars!r}",
                 "swizzle": "x、y和z的组合",
                 "bare_text": "任何文本",
-                "json": "JSON表达式"
+                "json": "JSON表达式",
+                "path": "文件路径",
+                "quoted_path": "带引号的文件路径"
             },
             "unclosed_str": "未闭合的字符串",
             "too_many_args": "过多参数",
@@ -912,7 +1045,8 @@
                 "cant_be": "数字不能是{num}",
                 "must_be": "数字必须是{nums}中的一个"
             },
-            "json_str": "JSON字符串: {suberr}"
+            "json_str": "JSON字符串: {suberr}",
+            "illegal_function_path": "函数文件路径里有无效的字符"
         }
     },
     "autocomp": {
@@ -931,6 +1065,7 @@
         "false": "false",
         "chars": "{chars}",
         "swizzle": "{swizzle}",
+        "path": "(文件路径)",
         "no_idtable": {
             "_hint": "(加载ID表来获取提示)",
             "item": "[物品类型]",
@@ -959,7 +1094,10 @@
             "ease_type": "[平滑函数]",
             "ability": "[能力]",
             "particle": "[粒子效果]",
-            "hud_element": "[HUD元素]"
+            "hud_element": "[HUD元素]",
+            "control_scheme": "[相机控制方案]",
+            "jigsaw": "[拼图/结构池]",
+            "jigsaw_target": "[拼图目标名称]"
         },
         "dynamic_id_fails": "(无法在ID表找到)"
     },

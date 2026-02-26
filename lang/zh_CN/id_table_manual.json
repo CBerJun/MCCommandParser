@@ -131,8 +131,17 @@
         "unbreaking": "耐久 (17)"
     },
     "permission": {
-        "camera": "允许玩家转视角",
-        "movement": "允许玩家移动"
+        "camera": "转视角",
+        "dismount": "取消骑乘载具",
+        "jump": "跳跃、向上飞行",
+        "lateral_movement": "移动",
+        "mount": "骑乘载具",
+        "move_backward": "向后移动",
+        "move_forward": "向前移动",
+        "move_left": "向左移动",
+        "move_right": "向右移动",
+        "movement": "移动、潜行、跳跃、飞行",
+        "sneak": "潜行、向下飞行"
     },
     "mob_event": {
         "minecraft:ender_dragon_event": "首次进入末地生成末影龙",
@@ -143,7 +152,10 @@
         "minecraft:first_person": "第一人称",
         "minecraft:third_person": "第三人称背面",
         "minecraft:third_person_front": "第三人称正面",
-        "minecraft:free": "摄像机不与玩家绑定"
+        "minecraft:free": "摄像机不与玩家绑定",
+        "minecraft:follow_orbit": "轨道相机",
+        "minecraft:fixed_boom": "固定镜头视角的轨道相机",
+        "minecraft:control_scheme_camera": "控制方案相机"
     },
     "ability": {
         "mayfly": "允许玩家飞行",
@@ -217,5 +229,12 @@
         "progress_bar": "经验条",
         "tooltips": "未知",
         "touch_controls": "触控控制"
+    },
+    "control_scheme": {
+        "camera_relative": null,
+        "camera_relative_strafe": null,
+        "locked_player_relative_strafe": null,
+        "player_relative": null,
+        "player_relative_strafe": null
     }
 }

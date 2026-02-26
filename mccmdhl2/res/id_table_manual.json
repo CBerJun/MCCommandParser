@@ -131,8 +131,17 @@
         "unbreaking": "Unbreaking (17)"
     },
     "permission": {
-        "camera": "Allow player turning",
-        "movement": "Allow player move"
+        "camera": "Camera turning",
+        "dismount": "Dismount",
+        "jump": "Jump and fly upwards",
+        "lateral_movement": "Move",
+        "mount": "Mount",
+        "move_backward": "Move backwards",
+        "move_forward": "Move forwards",
+        "move_left": "Move left",
+        "move_right": "Move right",
+        "movement": "Move, sneak, jump, and fly",
+        "sneak": "Sneak and fly downwards"
     },
     "mob_event": {
         "minecraft:ender_dragon_event": "Spawn an Ender Dragon on first entry of the End",
@@ -143,7 +152,10 @@
         "minecraft:first_person": "First Person",
         "minecraft:third_person": "Third Person Back",
         "minecraft:third_person_front": "Third Person Front",
-        "minecraft:free": "Camera not bound to player"
+        "minecraft:free": "Camera not bound to player",
+        "minecraft:follow_orbit": "Orbit camera",
+        "minecraft:fixed_boom": "Fixed boom view's orbit camera",
+        "minecraft:control_scheme_camera": "Control scheme camera"
     },
     "ability": {
         "mayfly": "Allow player to fly",
@@ -217,5 +229,12 @@
         "progress_bar": "Experience Bar",
         "tooltips": "Unknown",
         "touch_controls": "Touch Controls"
+    },
+    "control_scheme": {
+        "camera_relative": null,
+        "camera_relative_strafe": null,
+        "locked_player_relative_strafe": null,
+        "player_relative": null,
+        "player_relative_strafe": null
     }
 }

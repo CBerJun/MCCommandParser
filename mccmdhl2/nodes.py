@@ -23,6 +23,7 @@ from typing import (
     TYPE_CHECKING
 )
 import itertools
+import string
 import json
 import re
 
@@ -32,7 +33,9 @@ from .parser import (
     BaseError, SemanticError, SyntaxError_,
     Font, VersionFilter
 )
-from .reader import Reader, ReaderError, DIGITS, TERMINATORS, SIGNS
+from .reader import (
+    Reader, ReaderError, DIGITS, TERMINATORS, SIGNS, PATH_TERMINATORS
+)
 from .autocompleter import (
     Suggestion, IdSuggestion,
     str_find_rule, RULEW_OTHER, RULEW_FAILED, RULEW_STR_FIND, RuleWeight
@@ -62,6 +65,9 @@ PAT_ILLEGAL_WORD = re.compile(
     """,
     flags=re.VERBOSE
 )
+
+# Test result in MCBE 26.2
+FUNCTION_CHARS = frozenset(string.ascii_letters + string.digits + '()-._/')
 
 def char_check_rule(checker: Callable[[str], bool]):
     def _rule(s: str):
@@ -241,6 +247,29 @@ class Word(Node):
             )
         )]
 
+class _UnquotedFilePath(Node):
+    default_font = Font.string
+
+    def _parse(self, reader: Reader):
+        word = reader.read_unquoted_path()
+        if not word:
+            raise ExpectationFailure("path")
+        return word
+
+    @staticmethod
+    def _rule(s: str) -> RuleWeight:
+        # This serves as autocomplete for both quoted and unquoted path
+        if s.startswith('"') or not any(ch in PATH_TERMINATORS for ch in s):
+            return RULEW_OTHER
+        return RULEW_FAILED
+
+    @classmethod
+    def _suggest(cls):
+        return [Suggestion(
+            name="autocomp.path", writes="path",
+            match_rule=cls._rule
+        )]
+
 class Boolean(Word):
     default_font = Font.numeric
 
@@ -300,6 +329,9 @@ class QuotedString(SubparsingNode):
                     chars.append("\\")
                 elif char2 == '"':
                     chars.append('"')
+                elif reader.is_line_end(char2):  # Oops, unclosed str
+                    char = char2
+                    break
                 else:
                     f = False
                     chars.append(char)
@@ -339,6 +371,43 @@ class QuotedString(SubparsingNode):
             match_rule=cls._rule
         )]
 
+class _QuotedFilePath(SubparsingNode):
+    # See https://minecraft.wiki/w/Argument_types#CommandFilePath
+    # A file path may be quoted, and the \" escape is recognized;
+    # however it will be interpreted literally as a backslash and
+    # a quote, not just a quote. (Similarly, \\ is literally double
+    # backslash)
+
+    argument_end = False
+    default_font = Font.string
+
+    def _parse(self, marker: "Marker"):
+        reader = marker.reader
+        pos_begin = reader.get_location()
+        with marker.add_font_mark(Font.meta):  # type: ignore # Opening '"'
+            if reader.next() != '"':
+                raise ExpectationFailure("quoted_path")
+        char = reader.next()
+        while True:
+            if char == '"' or reader.is_line_end(char):
+                break
+            if char == "\\":
+                char2 = reader.next()
+                if reader.is_line_end(char2):  # Oops, unclosed str
+                    char = char2
+                    break
+            char = reader.next()
+        if char != '"':
+            raise ArgParseFailure("error.syntax.unclosed_str")
+        pos_end = reader.get_location()
+        marker.font_marks.append(FontMark(
+            pos_end.offset(-1), pos_end, Font.meta
+        ))  # Closing '"'
+        marker.ac_marks.append(AutoCompletingMark.from_node(
+            pos_begin, pos_end, self, marker.version
+        ))
+        return reader.get_slice(pos_begin.offset(+1), pos_end.offset(-1))
+
 class String(CompressedNode):
     def _tree(self):
         self._word_part = Word()
@@ -353,6 +422,25 @@ class String(CompressedNode):
               .branch(self.end)
           )
         )
+
+class FilePath(CompressedNode):
+    def __init__(self, function=False):
+        # This must be set before calling super's __init__
+        self.__function = function
+        super().__init__()
+
+    def _checker(self, result: str):
+        if not all(ch in FUNCTION_CHARS for ch in result):
+            raise SemanticError("error.semantic.illegal_function_path")
+
+    def _tree(self):
+        a = _UnquotedFilePath()
+        b = _QuotedFilePath()
+        if self.__function:
+            a.checker(self._checker)
+            b.checker(self._checker)
+        self.branch(a.branch(self.end))
+        self.branch(b.branch(self.end))
 
 class IdEntity(NamespacedId):
     def __init__(self):
@@ -428,6 +516,9 @@ class IdRPAC(_StringOverrideSuggest):
 class IdRecipe(_StringOverrideSuggest):
     def __init__(self):
         super().__init__(lambda: [IdSuggestion("recipe")])
+class IdControlScheme(_StringOverrideSuggest):
+    def __init__(self):
+        super().__init__(lambda: [IdSuggestion("control_scheme")])
 class IdCameraPreset(NamespacedId):
     def __init__(self):
         super().__init__("camera_preset")
@@ -443,6 +534,12 @@ class IdParticle(NamespacedId):
 class IdHudElement(Word):
     def _suggest(self):
         return [IdSuggestion("hud_element")]
+class IdJigsaw(NamespacedId):
+    def __init__(self):
+        super().__init__("jigsaw")
+class IdJigsawTargetName(NamespacedId):
+    def __init__(self):
+        super().__init__("jigsaw_target")
 
 def ItemData(is_test: bool):
     return (Integer()
@@ -854,22 +951,31 @@ class OffsetFloat(Node):
         )]
 
 class Pos(CompressedNode):
-    def __init__(self, type_: str):
+    def __init__(self, type_: Optional[str] = None,
+                 note_override: Optional[str] = None):
         self._type = type_
+        self._note_override = note_override
         super().__init__()
 
     def _tree(self):
+        if self._note_override is not None:
+            absolute_note = relative_note = self._note_override
+        else:
+            t = self._type
+            assert t is not None
+            absolute_note = "note._pos.absolute." + t
+            relative_note = "note._pos.relative." + t
         (self
           .branch(
             Float()
               .font(Font.position)
-              .note("note._pos.absolute." + self._type)
+              .note(absolute_note)
               .branch(self.end)
           )
           .branch(
             Char("~")
               .font(Font.position)
-              .note("note._pos.relative." + self._type)
+              .note(relative_note)
               .branch(
                 OffsetFloat()
                   .font(Font.position)
@@ -1190,6 +1296,60 @@ class SelectorArg(CompressedNode):
           .ranged(min=-180, max=180)
         )
 
+    class _HasPropertyArg(CompressedNode):
+        class _HasPropertyValue(CompressedNode):
+            def _tree(self):
+                (self
+                  .branch(
+                    QuotedString()
+                      .branch(self.end)
+                  )
+                  .branch(  # This must be before `_RawIntRange`
+                    Float()
+                      .branch(self.end)
+                  )
+                  .branch(
+                    _RawIntRange()
+                      .branch(self.end)
+                  )
+                  .branch(
+                    # Even booleans are case-insensitive! However, only
+                    # the real "true" and "false" work -- "TruE" parses
+                    # but always results in no target matching selector.
+                    # So here we just use normal Boolean. (MC's
+                    # mysterious codebase; tested in MC 26.2)
+                    Boolean()
+                      .branch(self.end)
+                  )
+                )
+
+        def _tree(self):
+            # Even the property name and the keyword "property" are case-
+            # insensitive.
+            (self
+              .branch(
+                KeywordCaseInsensitive("property")
+                  .note("note._selector.complex.has_property.property")
+                  .branch(
+                    Char("=")
+                      .branch(
+                        Invertable(Word())
+                          .branch(self.end)
+                      )
+                  )
+              )
+              .branch(
+                Word()
+                  .branch(
+                    Char("=")
+                      .branch(
+                        Invertable(self._HasPropertyValue())
+                          .branch(self.end)
+                      )
+                  )
+              )
+            )
+
     def _tree(self):
         def _handle(arg: str, node: Node, kwds: Dict[str, Any] = {}):
             self.branch(
@@ -1247,6 +1407,16 @@ class SelectorArg(CompressedNode):
               content=self._HasPermissionArg(),
               empty_ok=False
             ), {"version": VersionGe((1, 19, 80))}),
+            ("has_property", Series(
+              begin=Char("{")
+                .note("note._selector.complex.has_property.begin"),
+              end=Char("}")
+                .note("note._selector.complex.has_property.end"),
+              separator=Char(",")
+                .note("note._selector.complex.has_property.separator"),
+              content=self._HasPropertyArg(),
+              empty_ok=False
+            ), {"version": VersionGe((1, 20, 70))})
         ):
             _handle(*args)  # type: ignore
 
@@ -1260,6 +1430,16 @@ class Selector(CompressedNode):
         super().__init__()
 
     def _tree(self):
+        parameter_list = Series(
+          begin=Char("[")
+            .note("note._selector.complex.begin"),
+          end=Char("]")
+            .note("note._selector.complex.end"),
+          separator=Char(",")
+            .note("note._selector.complex.separator"),
+          content=SelectorArg(),
+          empty_ok=False
+        ).branch(self.end)
         (self
           .branch(
             String()
@@ -1275,21 +1455,18 @@ class Selector(CompressedNode):
                 NotedEnumerate("a", "e", "r", "p", "s", "initiator",
                                note_template="note._selector.complex.vars.%s")
                   .font(Font.target)
-                  .branch(
-                    Series(
-                      begin=Char("[")
-                        .note("note._selector.complex.begin"),
-                      end=Char("]")
-                        .note("note._selector.complex.end"),
-                      separator=Char(",")
-                        .note("note._selector.complex.separator"),
-                      content=SelectorArg(),
-                      empty_ok=False
-                    )
-                      .branch(self.end)
-                  )
+                  .branch(parameter_list)
                   .branch(self.end),
                 is_close=True
+              )
+              .branch(
+                Keyword("n")
+                  .font(Font.target)
+                  .note("note._selector.complex.vars.n")
+                  .branch(parameter_list)
+                  .branch(self.end),
+                is_close=True,
+                version=VersionGe((1, 21, 100))
               )
           )
         )
@@ -1987,15 +2164,7 @@ def Command():
         version=VersionGe((1, 20, 10))
       )
     )
-    _camera_rot = (Empty()
-      .branch(
-        Keyword("rot")
-          .note("note.camera.set.rot")
-          .branch(
-            YawPitch()
-              .finish(EOL)
-          )
-      )
+    _camera_facing = (Empty()
       .branch(
         Keyword("facing")
           .note("note._facing")
@@ -2010,6 +2179,49 @@ def Command():
         version=VersionGe((1, 20, 10))
       )
     )
+    _camera_entity_offset = (Empty()
+      .branch(
+        Keyword("entity_offset")
+          .note("note.camera.set.entity_offset.root")
+          .branch(
+            Float()
+              .note("note.camera.set.entity_offset.x")
+              .ranged(min=-64, max=64)
+              .branch(
+                Float()
+                  .note("note.camera.set.entity_offset.y")
+                  .ranged(min=-64, max=64)
+                  .branch(
+                    Float()
+                      .note("note.camera.set.entity_offset.z")
+                      .ranged(min=-64, max=64)
+                      .finish(EOL)
+                  )
+              )
+          ),
+        version=VersionGe((1, 21, 40))
+      )
+    )
+    _camera_offsets = (Empty()
+      .branch(
+        Keyword("view_offset")
+          .note("note.camera.set.view_offset.root")
+          .branch(
+            Float()
+              .note("note.camera.set.view_offset.x")
+              .ranged(min=-64, max=64)
+              .branch(
+                Float()
+                  .note("note.camera.set.view_offset.y")
+                  .ranged(min=-64, max=64)
+                  .branch(_camera_entity_offset)
+                  .finish(EOL)
+              )
+          ),
+        version=VersionGe((1, 21, 20))
+      )
+      .branch(_camera_entity_offset)
+    )
     _camera_set_end = (Empty()
       .branch(
         Keyword("default")
@@ -2021,12 +2233,61 @@ def Command():
           .note("note.camera.set.pos")
           .branch(
             Pos3D()
-              .branch(_camera_rot)
+              .branch(
+                Keyword("rot")
+                  .note("note.camera.set.rot")
+                  .branch(
+                    YawPitch()
+                      .finish(EOL)
+                  )
+              )
+              .branch(_camera_facing)
               .finish(EOL)
           )
       )
-      .branch(_camera_rot)
+      .branch(
+        Keyword("rot")
+          .note("note.camera.set.rot")
+          .branch(
+            YawPitch()
+              .branch(_camera_offsets)
+              .finish(EOL)
+          )
+      )
+      .branch(_camera_offsets)
+      .branch(_camera_facing)
       .finish(EOL)
+    )
+    _camera_fov_params = (Empty()
+      .branch(
+        Float()
+          .note("note.camera.fov.ease_time")
+          .ranged(min=0)
+          .branch(
+            IdEaseType()
+              .note("note.camera.fov.ease_type")
+              .finish(EOL)
+          )
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
+    _camera_target_center_offset = (
+      Keyword("target_center_offset")
+        .note("note.camera.target_entity.target_center_offset.root")
+        .branch(
+          Float()
+            .note("note.camera.target_entity.target_center_offset.x")
+            .branch(
+              Float()
+                .note("note.camera.target_entity.target_center_offset.y")
+                .branch(
+                  Float()
+                    .note("note.camera.target_entity.target_center_offset.z")
+                    .finish(EOL)
+                )
+            )
+        )
     )
 
     def _difficulty() -> Dict[str, str]:
@@ -2038,6 +2299,21 @@ def Command():
         res["n"] = res["normal"]
         res["h"] = res["hard"]
         return res
+
+    _effect_end = (Empty()
+      .branch(
+        Integer()
+          .note("note.effect.amplifier")
+          .ranged(min=0, max=255)
+          .branch(
+            Boolean()
+              .note("note.effect.hide_particles")
+              .finish(EOL)
+          )
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
 
     _enchant = (Empty()
       .branch(
@@ -2265,6 +2541,26 @@ def Command():
       )
     )
 
+    _place_opts = (Empty()
+      .branch(
+        Boolean()
+          .note("note.place.opts.keep_jigsaws")
+          .branch(
+            Boolean()
+              .note("note.place.opts.include_entities")
+              .branch(
+                NotedEnumerate("ignore_waterlogging", "apply_waterlogging",
+                               note_template="note.place.opts.liquid.%s")
+                  .finish(EOL),
+                version=VersionGe((1, 21, 90))
+              )
+              .finish(EOL)
+          )
+          .finish(EOL)
+      )
+      .finish(EOL)
+    )
+
     _replaceitem_end = (IdItem()
       .branch(
         Integer()
@@ -2289,6 +2585,15 @@ def Command():
           .branch(_replaceitem_end)
       )
       .branch(_replaceitem_end)
+    )
+
+    _schedule_delay_add_opts = (Empty()
+      .branch(
+        NotedEnumerate("replace", "append",
+                       note_template="note.schedule.delay.opts.%s")
+          .finish(EOL)
+      )
+      .finish(EOL)
     )
 
     _structure_load_end = (Boolean()
@@ -2429,6 +2734,53 @@ def Command():
           )
       )
       .branch(
+        CommandName("aimassist")
+          .branch(
+            Selector()
+              .branch(
+                Keyword("clear")
+                  .note("note.aimassist.clear")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("set")
+                  .note("note.aimassist.set.root")
+                  .branch(
+                    Float()
+                      .note("note.aimassist.set.x_angle")
+                      .ranged(min=10, max=90)
+                      .branch(
+                        Float()
+                          .note("note.aimassist.set.y_angle")
+                          .ranged(min=10, max=90)
+                          .branch(
+                            Float()
+                              .note("note.aimassist.set.max_distance")
+                              .ranged(min=1, max=16)
+                              .branch(
+                                NotedEnumerate(
+                                  "angle", "distance",
+                                  note_template="note.aimassist.set.modes.%s"
+                                )
+                                  .branch(
+                                    String()
+                                      .note("note.aimassist.set.preset")
+                                      .finish(EOL)
+                                  )
+                                  .finish(EOL)
+                              )
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          ),
+        version=VersionGe((1, 21, 50))
+      )
+      .branch(
         CommandName("alwaysday", "daylock")
           .branch(
             Boolean()
@@ -2519,6 +2871,63 @@ def Command():
                       )
                       .branch(_camera_set_end)
                   )
+              )
+              .branch(
+                Keyword("attach_to_entity")
+                  .note("note.camera.attach_to_entity")
+                  .branch(
+                    Selector()
+                      .finish(EOL)
+                  ),
+                version=VersionGe((1, 21, 120))
+              )
+              .branch(
+                Keyword("detach_from_entity")
+                  .note("note.camera.detach_from_entity")
+                  .finish(EOL),
+                version=VersionGe((1, 21, 120))
+              )
+              .branch(
+                Keyword("fov_clear")
+                  .note("note.camera.fov_clear")
+                  .branch(_camera_fov_params),
+                version=VersionGe((1, 21, 100))
+              )
+              .branch(
+                Keyword("fov_set")
+                  .note("note.camera.fov_set.root")
+                  .branch(
+                    Float()
+                      .note("note.camera.fov_set.fov_value")
+                      .branch(_camera_fov_params)
+                  ),
+                version=VersionGe((1, 21, 100))
+              )
+              .branch(
+                Keyword("play_spline")
+                  .note("note.camera.play_spline.root")
+                  .branch(
+                    String()
+                      .note("note.camera.play_spline.name")
+                      .finish(EOL)
+                  ),
+                version=VersionGe((26, 0))
+              )
+              .branch(
+                Keyword("remove_target")
+                  .note("note.camera.remove_target")
+                  .finish(EOL),
+                version=VersionGe((1, 21, 20))
+              )
+              .branch(
+                Keyword("target_entity")
+                  .note("note.camera.target_entity.root")
+                  .branch(
+                    Selector()
+                      .branch(_camera_target_center_offset)
+                      .finish(EOL)
+                  ),
+                version=VersionGe((1, 21, 20))
               )
           ),
         version=VersionGe((1, 20, 0))
@@ -2630,6 +3039,26 @@ def Command():
           )
       )
       .branch(
+        CommandName("controlscheme")
+          .branch(
+            Selector()
+              .branch(
+                Keyword("clear")
+                  .note("note.controlscheme.clear")
+                  .finish(EOL)
+              )
+              .branch(
+                Keyword("set")
+                  .note("note.controlscheme.set")
+                  .branch(
+                    IdControlScheme()
+                      .finish(EOL)
+                  )
+              )
+          ),
+        version=VersionGe((1, 21, 80))
+      )
+      .branch(
         CommandName("damage")
           .branch(
             Selector()
@@ -2716,8 +3145,16 @@ def Command():
             Selector()
               .branch(
                 Keyword("clear")
-                  .note("note.effect.clear")
-                  .finish(EOL)
+                  .note("note.effect.clear.root")
+                  .branch(
+                    IdEffect()
+                      .finish(EOL),
+                    version=VersionGe((1, 21, 40))
+                  )
+                  .branch(
+                    EOL()
+                      .note("note.effect.clear.all")
+                  )
               )
               .branch(
                 IdEffect()
@@ -2725,18 +3162,14 @@ def Command():
                     Integer()
                       .note("note.effect.seconds")
                       .ranged(min=0)
-                      .branch(
-                        Integer()
-                          .note("note.effect.amplifier")
-                          .ranged(min=0, max=255)
-                          .branch(
-                            Boolean()
-                              .note("note.effect.hide_particles")
-                              .finish(EOL)
-                          )
-                          .finish(EOL)
-                      )
-                      .finish(EOL)
+                      .branch(_effect_end)
+                  )
+                  .branch(
+                    Keyword("infinite")
+                      .font(Font.numeric)
+                      .note("note.effect.infinite")
+                      .branch(_effect_end),
+                    version=VersionGe((1, 21, 40))
                   )
                   .finish(EOL)
               )
@@ -2864,7 +3297,7 @@ def Command():
       .branch(
         CommandName("function")
           .branch(
-            BareText(empty_ok=False)
+            FilePath(function=True)
               .note("note.function.path")
               .finish(EOL)
           )
@@ -2993,6 +3426,16 @@ def Command():
               .note("note.gametest.pos")
               .finish(EOL)
           )
+      )
+      .branch(
+        CommandName("gametips")
+          .branch(
+            NotedEnumerate("disable", "enable", "d", "e",
+                           note_template="note.gametips.status.%s")
+              .font(Font.numeric)
+              .finish(EOL)
+          ),
+        version=VersionGe((1, 20, 80))
       )
       .branch(
         CommandName("give")
@@ -3320,6 +3763,75 @@ def Command():
           )
       )
       .branch(
+        CommandName("place")
+          .branch(
+            Keyword("feature")
+              .note("note.place.feature.root")
+              .branch(
+                String()
+                  .note("note.place.feature.feature")
+                  .branch(
+                    Pos3D()
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              ),
+            version=VersionGe((1, 21, 60))
+          )
+          .branch(
+            Keyword("featurerule")
+              .note("note.place.featurerule.root")
+              .branch(
+                String()
+                  .note("note.place.featurerule.feature_rule")
+                  .branch(
+                    Pos3D()
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              ),
+            version=VersionGe((1, 21, 60))
+          )
+          .branch(
+            Keyword("jigsaw")
+              .note("note.place.jigsaw.root")
+              .branch(
+                IdJigsaw()
+                  .branch(
+                    IdJigsawTargetName()
+                      .branch(
+                        Integer()
+                          .note("note.place.jigsaw.max_depth")
+                          .ranged(min=1, max=20)
+                          .branch(
+                            Pos3D()
+                              .branch(_place_opts)
+                          )
+                          .finish(EOL)
+                      )
+                  )
+              )
+          )
+          .branch(
+            Keyword("structure")
+              .note("note.place.structure.root")
+              .branch(
+                IdStructure()
+                  .branch(
+                    Pos3D()
+                      .branch(
+                        Boolean()
+                          .note("note.place.structure.ignore_start_height")
+                          .branch(_place_opts)
+                      )
+                      .finish(EOL)
+                  )
+                  .finish(EOL)
+              )
+          ),
+        version=VersionGe((1, 21, 50))
+      )
+      .branch(
         CommandName("playanimation")
           .branch(
             Selector()
@@ -3431,6 +3943,12 @@ def Command():
       )
       .branch(
         CommandName("reload")
+          .branch(
+            Keyword("all")
+              .note("note.reload.all")
+              .finish(EOL),
+            version=VersionGe((1, 21, 30))
+          )
           .finish(EOL)
       )
       .branch(
@@ -3531,28 +4049,116 @@ def Command():
               .note("note.schedule.area.root")
               .branch(
                 Keyword("add")
+                  .note("note.schedule.area.add.root")
                   .branch(
                     CircleOrArea()
                       .branch(
-                        BareText(empty_ok=False)
-                          .note("note.schedule.function")
+                        FilePath(function=True)
+                          .note("note.schedule.run_function")
                           .finish(EOL)
                       )
                   )
                   .branch(
                     Keyword("tickingarea")
-                      .note("note.schedule.area.tickingarea")
+                      .note("note.schedule.area.add.tickingarea")
                       .branch(
                         String()
                           .note("note._tickingarea")
                           .branch(
-                            BareText(empty_ok=False)
-                              .note("note.schedule.function")
+                            FilePath(function=True)
+                              .note("note.schedule.run_function")
                               .finish(EOL)
                           )
                       )
                   )
               )
+              .branch(
+                Keyword("clear")
+                  .note("note.schedule.area.clear.root")
+                  .branch(
+                    Keyword("function")
+                      .note("note.schedule.area.clear.function")
+                      .branch(
+                        FilePath(function=True)
+                          .note("note.schedule.clear_function")
+                          .finish(EOL)
+                      )
+                  )
+                  .branch(
+                    Keyword("tickingarea")
+                      .note("note.schedule.area.clear.tickingarea")
+                      .branch(
+                        String()
+                          .note("note._tickingarea")
+                          .branch(
+                            FilePath(function=True)
+                              .note("note.schedule.clear_function")
+                              .finish(EOL)
+                          )
+                          .finish(EOL)
+                      )
+                  ),
+                version=VersionGe((1, 21, 40))
+              )
+          )
+          .branch(
+            Keyword("clear")
+              .note("note.schedule.clear")
+              .branch(
+                FilePath(function=True)
+                  .note("note.schedule.clear_function")
+                  .finish(EOL)
+              ),
+            version=VersionGe((1, 21, 40))
+          )
+          .branch(
+            Keyword("delay")
+              .note("note.schedule.delay.root")
+              .branch(
+                Keyword("add")
+                  .note("note.schedule.delay.add")
+                  .branch(
+                    FilePath(function=True)
+                      .note("note.schedule.run_function")
+                      .branch(
+                        Integer()
+                          .note("note.schedule.delay.duration")
+                          .ranged(min=1)
+                          .branch(
+                            KeywordCaseInsensitive("d")
+                              .note("note.schedule.delay.units.d")
+                              .font(Font.meta)
+                              .branch(_schedule_delay_add_opts),
+                            is_close=True
+                          )
+                          .branch(
+                            KeywordCaseInsensitive("s")
+                              .note("note.schedule.delay.units.s")
+                              .font(Font.meta)
+                              .branch(_schedule_delay_add_opts),
+                            is_close=True
+                          )
+                          .branch(
+                            KeywordCaseInsensitive("t")
+                              .note("note.schedule.delay.units.t")
+                              .font(Font.meta)
+                              .branch(_schedule_delay_add_opts),
+                            is_close=True
+                          )
+                          .branch(_schedule_delay_add_opts)
+                      )
+                  )
+              )
+              .branch(
+                Keyword("clear")
+                  .note("note.schedule.delay.clear")
+                  .branch(
+                    FilePath(function=True)
+                      .note("note.schedule.clear_function")
+                      .finish(EOL)
+                  )
+              ),
+            version=VersionGe((1, 21, 50))
           )
       )
       .branch(
@@ -3905,6 +4511,12 @@ def Command():
                           .ranged(min=1)
                           .branch(
                             Selector()
+                              .branch(
+                                Pos("y", note_override=
+                                    "note.spreadplayers.max_height")
+                                  .finish(EOL),
+                                version=VersionGe((1, 21, 20))
+                              )
                               .finish(EOL)
                           )
                       )
@@ -4295,7 +4907,8 @@ def Command():
                 EOL()
                   .note("note.volumearea.list.cur_dim")
               )
-          )
+          ),
+        version=VersionLt((1, 21, 20))
       )
       .branch(
         CommandName("worldbuilder", "wb")

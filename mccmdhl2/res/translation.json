@@ -12,7 +12,8 @@
                     "a": "All players",
                     "p": "Nearest player",
                     "r": "Random player",
-                    "initiator": "Player who opened dialogue (NPC only)"
+                    "initiator": "Player who opened dialogue (NPC only)",
+                    "n": "Nearest entity"
                 },
                 "begin": "Add entity filters",
                 "end": "End of entity filters",
@@ -40,7 +41,8 @@
                     "lm": "Min exp level",
                     "m": "Game mode",
                     "c": "Max number of entity",
-                    "haspermission": "Input permission"
+                    "haspermission": "Input permission",
+                    "has_property": "Entity property"
                 },
                 "equals": "Input argument value",
                 "scores": {
@@ -73,6 +75,12 @@
                     "begin": "Start of input permission filters",
                     "end": "End of input permission filters",
                     "separator": "Next input permission filter"
+                },
+                "has_property": {
+                    "begin": "Start of property filters",
+                    "end": "End of property filters",
+                    "separator": "Next property filter",
+                    "property": "Test if entity has this property"
                 }
             }
         },
@@ -215,6 +223,21 @@
             },
             "set": "Set state of specified ability of target"
         },
+        "aimassist": {
+            "root": "Manage players' aim assist",
+            "clear": "Clear aim assist",
+            "set": {
+                "root": "Set aim assist",
+                "x_angle": "Horizontal target angle (default 50)",
+                "y_angle": "Vertical target angle (default 50)",
+                "max_distance": "Max target distance in blocks",
+                "preset": "Aim assist preset",
+                "modes": {
+                    "angle": "Angle (default)",
+                    "distance": "Distance"
+                }
+            }
+        },
         "alwaysday": {
             "root": "Lock/Unlock Alwaysday",
             "lock": "Lock Alwaysday",
@@ -246,6 +269,42 @@
                 "ease": {
                     "root": "Set easing function when changing camera",
                     "time": "Ease time (seconds)"
+                },
+                "view_offset": {
+                    "root": "For follow_orbit: Offset of the camera",
+                    "x": "X offset",
+                    "y": "Y offset"
+                },
+                "entity_offset": {
+                    "root": "For follow_orbit: Offset of the camera from an entity",
+                    "x": "X offset",
+                    "y": "Y offset",
+                    "z": "Z offset"
+                }
+            },
+            "attach_to_entity": "Attach camera to entity",
+            "detach_from_entity": "Detach camera from entity",
+            "fov_clear": "Clear camera FOV effect",
+            "fov_set": {
+                "root": "Set camera FOV effect",
+                "fov_value": "FOV (valid value: 30~110)"
+            },
+            "fov": {
+                "ease_time": "FOV ease transition time",
+                "ease_type": "FOV ease function type"
+            },
+            "play_spline": {
+                "root": "Play a spline from behavior packs",
+                "name": "Spline ID"
+            },
+            "remove_target": "Remove target entity",
+            "target_entity": {
+                "root": "Set target entity",
+                "target_center_offset": {
+                    "root": "Offset of camera from center of targeted entity",
+                    "x": "X offset",
+                    "y": "Y offset",
+                    "z": "Z offset"
                 }
             }
         },
@@ -287,6 +346,11 @@
             "out": "Disconnect from current server",
             "address": "Server address"
         },
+        "controlscheme": {
+            "root": "Manage players' control scheme of camera presets",
+            "clear": "Clear control scheme",
+            "set": "Set control scheme"
+        },
         "damage": {
             "root": "Damage entities",
             "amount": "Amount (1 = Half a heart)",
@@ -317,8 +381,12 @@
         },
         "effect": {
             "root": "Manage effects (i.e. buffs)",
-            "clear": "Clear all of players' effects",
+            "clear": {
+                "root": "Remove effects",
+                "all": "Clear all of players' effects"
+            },
             "seconds": "Duration (in seconds; in ticks for 3 invisible buffs)",
+            "infinite": "Infinite duration",
             "amplifier": "Amplifier (level-1)",
             "hide_particles": "Whether to hide potion particles"
         },
@@ -434,6 +502,15 @@
             },
             "pos": "Find nearest Structure Block within 200 blocks radius"
         },
+        "gametips": {
+            "root": "Manage game tips on this device",
+            "status": {
+                "enable": "Enabled",
+                "disable": "Disabled",
+                "e": "Enabled",
+                "d": "Disabled"
+            }
+        },
         "give": {
             "root": "Give players items",
             "amount": "Amount of item"
@@ -531,6 +608,33 @@
         "particle": {
             "root": "Generate a particle effect"
         },
+        "place": {
+            "root": "Place structures and features",
+            "feature": {
+                "root": "Place a feature",
+                "feature": "Feature ID"
+            },
+            "featurerule": {
+                "root": "Place a feature by feature rule",
+                "feature_rule": "Feature rule ID"
+            },
+            "jigsaw": {
+                "root": "Place a jigsaw structure",
+                "max_depth": "Max depth of jigsaw"
+            },
+            "structure": {
+                "root": "Place a structure",
+                "ignore_start_height": "Ignore height placement rule of structure"
+            },
+            "opts": {
+                "keep_jigsaws": "Keep jigsaws or not",
+                "include_entities": "Load entities or not",
+                "liquid": {
+                    "ignore_waterlogging": "Do not waterlog present blocks",
+                    "apply_waterlogging": "Waterlog present blocks"
+                }
+            }
+        },
         "playanimation": {
             "root": "Trigger entity animations",
             "blend": "Blend out time (seconds)",
@@ -549,7 +653,8 @@
             "wildcard": "All the recipes"
         },
         "reload": {
-            "root": "Reload functions & scripts in behavior packs"
+            "root": "Reload functions & scripts in behavior packs",
+            "all": "Also quit the world and rejoin"
         },
         "replaceitem": {
             "root": "Replace specified slots with given items",
@@ -589,9 +694,34 @@
             "root": "Schedule a function to be executed later",
             "area": {
                 "root": "Execute a function when an area is loaded",
-                "tickingarea": "Execute the function when a tickingarea is added"
+                "add": {
+                    "root": "Add an area-loaded schedule",
+                    "tickingarea": "Execute the function when a tickingarea is added"
+                },
+                "clear": {
+                    "root": "Cancel an area-loaded schedule",
+                    "function": "Cancel by function path",
+                    "tickingarea": "Cancel by tickingarea"
+                }
             },
-            "function": "Path of function to run"
+            "clear": "Cancel a schedule",
+            "delay": {
+                "root": "Execute a function after a set period of time",
+                "duration": "Amount of time to wait before execution",
+                "units": {
+                    "d": "Days (24000 ticks)",
+                    "s": "Seconds (20 ticks)",
+                    "t": "Ticks (default)"
+                },
+                "opts": {
+                    "append": "Add a new schedule",
+                    "replace": "Replace previous schedules of this function (default)"
+                },
+                "add": "Add a delay schedule",
+                "clear": "Cancel a delay schedule"
+            },
+            "run_function": "Path of function to run",
+            "clear_function": "Path of function to cancel schedule for"
         },
         "scoreboard": {
             "root": "Interact with scoreboard system",
@@ -710,7 +840,8 @@
         "spreadplayers": {
             "root": "Spread entities to different locations within an area",
             "distance": "Min distance between any 2 victims",
-            "max_range": "Half the length of side of the square spreading area"
+            "max_range": "Half the length of side of the square spreading area",
+            "max_height": "Max y-coordinate for destination"
         },
         "stopsound": {
             "root": "Stop playing sound for players"
@@ -897,7 +1028,9 @@
                 "chars": "{chars!r}",
                 "swizzle": "combination of x, y and z",
                 "bare_text": "any text",
-                "json": "a JSON expression"
+                "json": "a JSON expression",
+                "path": "a file path",
+                "quoted_path": "a quoted file path"
             },
             "unclosed_str": "Unclosed string",
             "too_many_args": "Too many arguments",
@@ -912,7 +1045,8 @@
                 "cant_be": "Number can't be {num}",
                 "must_be": "Number must be one of {nums}"
             },
-            "json_str": "JSON string: {suberr}"
+            "json_str": "JSON string: {suberr}",
+            "illegal_function_path": "Function path has illegal character(s)"
         }
     },
     "autocomp": {
@@ -931,6 +1065,7 @@
         "false": "false",
         "chars": "{chars}",
         "swizzle": "{swizzle}",
+        "path": "(File Path)",
         "no_idtable": {
             "_hint": "(Load proper ID table to see hints)",
             "item": "[Item Type]",
@@ -959,7 +1094,10 @@
             "ease_type": "[Easing Function]",
             "ability": "[Ability]",
             "particle": "[Particle]",
-            "hud_element": "[HUD Element]"
+            "hud_element": "[HUD Element]",
+            "control_scheme": "[Control Scheme]",
+            "jigsaw": "[Jigsaw]",
+            "jigsaw_target": "[Jigsaw Target Name]"
         },
         "dynamic_id_fails": "(Can't find in ID table)"
     },
