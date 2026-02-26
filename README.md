@@ -6,7 +6,7 @@ This project is a parser for Minecraft Bedrock command, which supports:
    - hints for every branch that explain the usages
    - ID hints (e.g. item ID and entity ID)
    - localization support (i.e. hint in different languages)
- * different versions of command system (from `1.19.0` to `1.20.60`!)
+ * different versions of command system (from `1.19.0` to `26.0`!)
 
 These almost make an IDE for command!
 Use Python (3.6+) to run `main.py` and try the "IDE" we make.
