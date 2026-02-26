@@ -324,7 +324,8 @@ class MCCmdText(tkinter.Text):
     FONT_TKTAG_PREFIX = "mccmdhl2F"
 
     def __init__(self, *args,
-                 mc_version: "MCVersion" = (1, 19, 80),
+                 # Version 128.0 for "latest version"
+                 mc_version: "MCVersion" = (128, 0),
                  parser_kwds: Dict[str, Any] = {},
                  suggest_kwds: Dict[str, Any] = {},
                  **kwds):
